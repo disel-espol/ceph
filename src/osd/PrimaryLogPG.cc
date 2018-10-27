@@ -1942,6 +1942,99 @@ hobject_t PrimaryLogPG::earliest_backfill() const
   return e;
 }
 
+int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
+  string prefix = "_BP_TAG_";
+  map<string, bufferlist> attr_list;
+  string tag_attr_str;
+
+  int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
+
+  for (auto& [attr_name, attr_value]: attr_list) {
+    if(attr_name.find(prefix) == 0){
+      tag_attr_str = attr_name;
+      int cmp = current_bp_tag.compare(tag_attr_str);
+      
+      if(cmp != 0){ 
+        current_bp_tag = tag_attr_str;
+        promote_by_tag(current_bp_tag);
+      }
+      break;
+    }
+  }
+  return 0;
+}
+
+int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
+  string prefix = "_BP_TAG_";
+  map<string, bufferlist> attr_list;
+  string tag_attr_str;
+
+
+
+  int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
+
+  for (auto& [attr_name, attr_value]: attr_list) {
+    if(attr_name.find(prefix) == 0){
+
+      tag_attr_str = attr_name;
+      int cmp = current_bp_tag.compare(tag_attr_str);
+      
+      //optimize, dont modify the flags every time
+      if(cmp == 0){ 
+        oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
+        pinned_object_count++;
+      }
+      client_tag_index[tag_attr_str].insert(oi.soid);
+      break;
+    }
+  }
+  return 0;
+}
+
+int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
+  string prefix = "_BP_TAG_";
+  map<string, bufferlist> attr_list;
+  string tag_attr_str;
+
+
+  int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
+
+  for (auto& [attr_name, attr_value]: attr_list) {
+    if(attr_name.find(prefix) == 0){
+      tag_attr_str = attr_name;
+      int cmp = current_bp_tag.compare(tag_attr_str);
+      
+      //optimize, dont modify the flags every time
+      if(cmp != 0){ 
+        oi.clear_flag(object_info_t::FLAG_TAG_CACHE_PIN);
+        pinned_object_count--;
+      } 
+      break;
+    }
+  }
+  return 0;
+}
+
+int PrimaryLogPG::promote_by_tag(string tag){
+  auto objects = client_tag_index[tag];
+
+  for (auto& oid: objects) {
+    ObjectContextRef obc;
+    find_object_context(oid, &obc, true);
+
+    ObjectContextRef promote_obc;
+
+    object_locator_t oloc(obc->obs.oi.soid);
+    bool in_hit_set = false;
+    if(hit_set){
+      in_hit_set = obc->obs.oi.soid != hobject_t();
+      in_hit_set = in_hit_set && hit_set->contains(oid);
+    }
+    maybe_promote(obc, oid, oloc, in_hit_set, pool.info.min_write_recency_for_promote, nullptr, &promote_obc);
+  }
+  return 0;
+}
+
 /** do_op - do an op
  * pg lock will be held (if multithreaded)
  * osd_lock NOT held.
@@ -2358,6 +2451,7 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
 		     << " on object " << oloc
 		      << " op " << *m;
   }
+
 
   // io blocked on obc?
   if (obc->is_blocked() &&
@@ -2818,6 +2912,9 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
     missing_oid = obc->obs.oi.soid;
   }
 
+  if(obc.get())
+    compare_for_tag_change(obc->obs.oi);
+
   const MOSDOp *m = static_cast<const MOSDOp*>(op->get_req());
   const object_locator_t oloc = m->get_object_locator();
 
@@ -2841,6 +2938,8 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
       block_write_on_full_cache(missing_oid, op);
       return cache_result_t::BLOCKED_FULL;
     }
+
+
 
     if (must_promote || (!hit_set && !op->need_skip_promote())) {
       promote_object(obc, missing_oid, oloc, op, promote_obc);
@@ -5694,7 +5793,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 
   PGTransaction* t = ctx->op_t.get();
 
-  dout(10) << "do_osd_op " << soid << " " << ops << dendl;
+  dout(10) << "DO_OSD_OP: " << soid << " " << ops << dendl;
 
   ctx->current_osd_subop_num = 0;
   for (auto p = ops.begin(); p != ops.end(); ++p, ctx->current_osd_subop_num++, ctx->processed_subop_count++) {
@@ -6517,6 +6616,8 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
         } else {
 	  obs.oi.clear_data_digest();
 	}
+
+  maybe_set_tag_cache_pinned(obs.oi);
 
 	write_update_size_and_usage(ctx->delta_stats, oi, ctx->modified_ranges,
 	    0, op.extent.length, true);
@@ -9467,7 +9568,7 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
       SnapSet& snapset = obc->ssc->snapset;
       vector<snapid_t>::iterator p = snapset.snaps.begin();
       while (p != snapset.snaps.end() && *p > soid.snap)
-	++p;
+	        ++p;
       while (p != snapset.snaps.end() && *p > results->snap_seq) {
 	results->snaps.push_back(*p);
 	++p;
@@ -9514,11 +9615,11 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
 	 i != tctx->new_snapset.clones.end();
 	 ++i) {
       if (*i != soid.snap) {
-	new_clones.push_back(*i);
-	auto p = tctx->new_snapset.clone_snaps.find(*i);
-	if (p != tctx->new_snapset.clone_snaps.end()) {
-	  new_clone_snaps[*i] = p->second;
-	}
+        new_clones.push_back(*i);
+        auto p = tctx->new_snapset.clone_snaps.find(*i);
+        if (p != tctx->new_snapset.clone_snaps.end()) {
+          new_clone_snaps[*i] = p->second;
+        }
       }
     }
     tctx->new_snapset.clones.swap(new_clones);
@@ -9785,6 +9886,7 @@ int PrimaryLogPG::start_flush(
   bool blocking, hobject_t *pmissing,
   boost::optional<std::function<void()>> &&on_flush)
 {
+
   const object_info_t& oi = obc->obs.oi;
   const hobject_t& soid = oi.soid;
   dout(10) << __func__ << " " << soid
@@ -13992,16 +14094,21 @@ void PrimaryLogPG::agent_load_hit_sets()
 
 bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
 {
+  maybe_clear_tag_cache_pinned(obc->obs.oi);
+
   if (!obc->obs.oi.is_dirty()) {
     dout(20) << __func__ << " skip (clean) " << obc->obs.oi << dendl;
     osd->logger->inc(l_osd_agent_skip);
     return false;
   }
+
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
     osd->logger->inc(l_osd_agent_skip);
     return false;
   }
+  bufferlist tag_attr;
+  //dout(0) << __func__ << " flushing object without tag: " << current_bp_tag << dendl;
 
   utime_t now = ceph_clock_now();
   utime_t ob_local_mtime;
@@ -14056,6 +14163,8 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
 bool PrimaryLogPG::agent_maybe_evict(ObjectContextRef& obc, bool after_flush)
 {
   const hobject_t& soid = obc->obs.oi.soid;
+  maybe_clear_tag_cache_pinned(obc->obs.oi);
+
   if (!after_flush && obc->obs.oi.is_dirty()) {
     dout(20) << __func__ << " skip (dirty) " << obc->obs.oi << dendl;
     return false;
@@ -14068,6 +14177,7 @@ bool PrimaryLogPG::agent_maybe_evict(ObjectContextRef& obc, bool after_flush)
     dout(20) << __func__ << " skip (blocked) " << obc->obs.oi << dendl;
     return false;
   }
+
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
     return false;
@@ -14259,11 +14369,18 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
 	   << " num_overhead_bytes: " << num_overhead_bytes
 	   << " pool.info.target_max_bytes: " << pool.info.target_max_bytes
 	   << " pool.info.target_max_objects: " << pool.info.target_max_objects
+	  // << " tagged objects: " << pinned_object_count
 	   << dendl;
 
   // get dirty, full ratios
   uint64_t dirty_micro = 0;
   uint64_t full_micro = 0;
+
+  //dout(0) << "num_user_objects: " << num_user_objects << dendl;
+  //dout(0) << "pinned_object_count: " << pinned_object_count << dendl;
+  num_user_objects -= pinned_object_count;
+
+
   if (pool.info.target_max_bytes && num_user_objects > 0) {
     uint64_t avg_size = num_user_bytes / num_user_objects;
     dirty_micro =
@@ -14280,13 +14397,13 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
     if (dirty_objects_micro > dirty_micro)
       dirty_micro = dirty_objects_micro;
     uint64_t full_objects_micro =
-      num_user_objects * 1000000 /
+      num_user_objects * 1000000.0 /
       std::max<uint64_t>(pool.info.target_max_objects / divisor, 1);
     if (full_objects_micro > full_micro)
       full_micro = full_objects_micro;
   }
-  dout(20) << __func__ << " dirty " << ((float)dirty_micro / 1000000.0)
-	   << " full " << ((float)full_micro / 1000000.0)
+  dout(20) << __func__ << " dirty " << ((float)dirty_micro / 1000000)
+	   << " full " << ((float)full_micro / 1000000)
 	   << dendl;
 
   // flush mode
@@ -14317,7 +14434,7 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
 
   if (full_micro > 1000000) {
     // evict anything clean
-    evict_mode = TierAgentState::EVICT_MODE_FULL;
+    evict_mode = TierAgentState::EVICT_MODE_SOME;
     evict_effort = 1000000;
   } else if (full_micro > evict_target) {
     // set effort in [0..1] range based on where we are between
@@ -15343,3 +15460,7 @@ void put_with_id(PrimaryLogPG *pg, uint64_t id) { return pg->put_with_id(id); }
 
 void intrusive_ptr_add_ref(PrimaryLogPG::RepGather *repop) { repop->get(); }
 void intrusive_ptr_release(PrimaryLogPG::RepGather *repop) { repop->put(); }
+
+
+
+
