@@ -2866,7 +2866,9 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
 
   OpRequestRef promote_op;
 
-  switch (pool.info.cache_mode) {
+  int rand_cache_mode = rand() % 7;
+
+  switch (rand_cache_mode) {
   case pg_pool_t::CACHEMODE_WRITEBACK:
     if (agent_state &&
 	agent_state->evict_mode == TierAgentState::EVICT_MODE_FULL) {
