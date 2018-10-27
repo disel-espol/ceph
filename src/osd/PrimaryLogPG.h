@@ -53,12 +53,16 @@ void put_with_id(PrimaryLogPG *pg, uint64_t id);
 
 struct inconsistent_snapset_wrapper;
 
+
 class PrimaryLogPG : public PG, public PGBackend::Listener {
   friend class OSD;
   friend class Watch;
 
 public:
   MEMPOOL_CLASS_HELPERS();
+
+  unordered_map<string, unordered_set<hobject_t>> client_tag_index;
+
 
   /*
    * state associated with a copy operation
@@ -1199,6 +1203,7 @@ protected:
    * this is a noop.  If a future user wants to be able to distinguish
    * these cases, a return value should be added.
    */
+
   void promote_object(
     ObjectContextRef obc,            ///< [optional] obc
     const hobject_t& missing_object, ///< oid (if !obc)
@@ -1206,6 +1211,13 @@ protected:
     OpRequestRef op,                 ///< [optional] client op
     ObjectContextRef *promote_obc = nullptr ///< [optional] new obc for object
     );
+
+  int pinned_object_count = 0;
+  string current_bp_tag;
+  int promote_by_tag(string tag);
+  int compare_for_tag_change(object_info_t& oi);
+  int maybe_set_tag_cache_pinned(object_info_t& oi);
+  int maybe_clear_tag_cache_pinned(object_info_t& oi);
 
   int prepare_transaction(OpContext *ctx);
   list<pair<OpRequestRef, OpContext*> > in_progress_async_reads;
