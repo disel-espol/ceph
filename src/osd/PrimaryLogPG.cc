@@ -2866,7 +2866,18 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
 
   OpRequestRef promote_op;
 
-  int rand_cache_mode = rand() % 7;
+  int tag_cache_mode;
+
+  bufferlist* tag_attr;
+
+  int r = pgbackend->objects_get_attr(obc->obs.oi.soid, "TAG_ATTR", &tag_attr);
+  if(!r){
+    tag_cache_mode = pg_pool_t::CACHEMODE_WRITEBACK;
+  	dout(20) << "OK(r)" << dendl;
+  }else{
+    tag_cache_mode = pg_pool_t::CACHEMODE_NONE;
+  	dout(20) << "OK(!r)" << dendl;
+  }
 
   switch (rand_cache_mode) {
   case pg_pool_t::CACHEMODE_WRITEBACK:
@@ -2995,6 +3006,9 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
     do_proxy_read(op);
     return cache_result_t::HANDLED_PROXY;
 
+  case pg_pool_t::CACHEMODE_NONE:
+  break;
+  
   default:
     ceph_abort_msg("unrecognized cache_mode");
   }
