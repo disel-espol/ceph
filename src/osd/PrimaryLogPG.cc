@@ -2807,8 +2807,8 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   bufferlist* tag_attr;
   const string tag_attr_str = "TAG_ATTR";
 
-  int r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
-  if(!r){
+  int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
+  if(!attr_r){
     tag_cache_mode = pg_pool_t::CACHEMODE_WRITEBACK;
   	dout(0) << "HAS ATTR" << dendl;
   }else{
