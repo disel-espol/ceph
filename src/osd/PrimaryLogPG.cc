@@ -2804,7 +2804,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
 {
   int tag_cache_mode;
 
-  bufferlist* tag_attr;
+  bufferlist tag_attr;
   const string tag_attr_str = "TAG_ATTR";
 
   int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
