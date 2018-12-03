@@ -2802,6 +2802,20 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   bool in_hit_set,
   ObjectContextRef *promote_obc)
 {
+  int tag_cache_mode;
+
+  bufferlist* tag_attr;
+  const string tag_attr_str = "TAG_ATTR";
+
+  int r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
+  if(!r){
+    tag_cache_mode = pg_pool_t::CACHEMODE_WRITEBACK;
+  	dout(0) << "HAS ATTR" << dendl;
+  }else{
+    tag_cache_mode = pg_pool_t::CACHEMODE_NONE;
+  	dout(0) << "HAS NOT ATTR" << dendl;
+  }
+
   // return quickly if caching is not enabled
   if (pool.info.cache_mode == pg_pool_t::CACHEMODE_NONE)
     return cache_result_t::NOOP;
@@ -2866,20 +2880,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
 
   OpRequestRef promote_op;
 
-  int tag_cache_mode;
-
-  bufferlist* tag_attr;
-
-  int r = pgbackend->objects_get_attr(obc->obs.oi.soid, "TAG_ATTR", &tag_attr);
-  if(!r){
-    tag_cache_mode = pg_pool_t::CACHEMODE_WRITEBACK;
-  	dout(20) << "OK(r)" << dendl;
-  }else{
-    tag_cache_mode = pg_pool_t::CACHEMODE_NONE;
-  	dout(20) << "OK(!r)" << dendl;
-  }
-
-  switch (rand_cache_mode) {
+  switch (tag_cache_mode) {
   case pg_pool_t::CACHEMODE_WRITEBACK:
     if (agent_state &&
 	agent_state->evict_mode == TierAgentState::EVICT_MODE_FULL) {
