@@ -2810,10 +2810,10 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
   if(!attr_r){
     tag_cache_mode = pg_pool_t::CACHEMODE_WRITEBACK;
-  	dout(0) << "HAS ATTR" << dendl;
+  	dout(0) << "HAS ATTR: " << tag_attr.to_str() << dendl;
   }else{
     tag_cache_mode = pg_pool_t::CACHEMODE_NONE;
-  	dout(0) << "HAS NOT ATTR" << dendl;
+  	dout(0) << "ERROR: "<< attr_r << "PROB NOT ATTR" << dendl;
   }
 
   // return quickly if caching is not enabled
