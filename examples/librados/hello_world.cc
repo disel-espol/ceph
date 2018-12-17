@@ -14,6 +14,7 @@
 #include <rados/librados.hpp>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 int main(int argc, const char **argv)
 {
