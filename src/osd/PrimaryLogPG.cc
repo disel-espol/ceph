@@ -9918,6 +9918,14 @@ int PrimaryLogPG::start_flush(
   bool blocking, hobject_t *pmissing,
   boost::optional<std::function<void()>> &&on_flush)
 {
+  bufferlist tag_attr;
+  const string tag_attr_str = "_TAG_ATTR";
+
+  int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
+  if(!attr_r){
+    return;
+  }
+
   const object_info_t& oi = obc->obs.oi;
   const hobject_t& soid = oi.soid;
   dout(10) << __func__ << " " << soid
