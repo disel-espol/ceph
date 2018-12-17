@@ -2817,7 +2817,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   }
 
   // return quickly if caching is not enabled
-  if (pool.info.cache_mode == pg_pool_t::CACHEMODE_NONE)
+  if (tag_cache_mode == pg_pool_t::CACHEMODE_NONE)
     return cache_result_t::NOOP;
 
   if (op &&
