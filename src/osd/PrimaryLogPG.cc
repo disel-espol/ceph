@@ -772,7 +772,7 @@ void PrimaryLogPG::maybe_force_recovery()
       !state_test(PG_STATE_RECOVERING |
                   PG_STATE_RECOVERY_WAIT |
 		  PG_STATE_BACKFILLING |
-		  PG_STATE_BACKFILL_WAIT |
+		  PG_STATE_BACKFILL_WAIT |object_name
 		  PG_STATE_BACKFILL_TOOFULL))
     return;
 
@@ -2804,23 +2804,17 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
 {
   int tag_cache_mode;
 
-  std::map<string,bufferlist> tag_attr;
-  const string tag_attr_str = "TAG_ATTR";
+  bufferlist tag_attr;
+  const string tag_attr_str = "_TAG_ATTR";
 
-  int attr_r = pgbackend->objects_get_attrs(obc->obs.oi.soid, &tag_attr);
-
-  for(auto it = tag_attr.begin(); it != tag_attr.end(); it++){
-    dout(0) << "ATTR: " << it->first << " : " << it->second << dendl;
+  int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
+  if(!attr_r){
+    tag_cache_mode = pg_pool_t::CACHEMODE_WRITEBACK;
+  	dout(0) << "HAS ATTR: " << tag_attr.to_str() << dendl;
+  }else{
+    tag_cache_mode = pg_pool_t::CACHEMODE_NONE;
+  	dout(0) << "ERROR: "<< attr_r << " PROB NOT ATTR" << dendl;
   }
-  
-
-  // if(!attr_r){
-  //   tag_cache_mode = pg_pool_t::CACHEMODE_WRITEBACK;
-  // 	dout(0) << "HAS ATTR: " << tag_attr.to_str() << dendl;
-  // }else{
-  //   tag_cache_mode = pg_pool_t::CACHEMODE_NONE;
-  // 	dout(0) << "ERROR: "<< attr_r << " PROB NOT ATTR" << dendl;
-  // }
 
   // return quickly if caching is not enabled
   if (pool.info.cache_mode == pg_pool_t::CACHEMODE_NONE)
