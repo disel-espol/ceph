@@ -2807,7 +2807,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   std::map<string,bufferlist> tag_attr;
   const string tag_attr_str = "TAG_ATTR";
 
-  int attr_r = pgbackend->objects_get_attrs(obc->obs.oi.soid, tag_attr_str, &tag_attr);
+  int attr_r = pgbackend->objects_get_attrs(obc->obs.oi.soid, &tag_attr);
 
   for(auto it = tag_attr.begin(); it != tag_attr.end(); it++){
     dout(0) << "ATTR: " << it->first << " : " << it->second << dendl;
