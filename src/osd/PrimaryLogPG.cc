@@ -772,7 +772,7 @@ void PrimaryLogPG::maybe_force_recovery()
       !state_test(PG_STATE_RECOVERING |
                   PG_STATE_RECOVERY_WAIT |
 		  PG_STATE_BACKFILLING |
-		  PG_STATE_BACKFILL_WAIT |object_name
+		  PG_STATE_BACKFILL_WAIT |
 		  PG_STATE_BACKFILL_TOOFULL))
     return;
 
