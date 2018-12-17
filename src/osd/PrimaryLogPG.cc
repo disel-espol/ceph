@@ -9923,7 +9923,7 @@ int PrimaryLogPG::start_flush(
 
   int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
   if(!attr_r){
-    return;
+    return 0;
   }
 
   const object_info_t& oi = obc->obs.oi;
