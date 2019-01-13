@@ -101,6 +101,7 @@ void send_read_reqs(conf_t* conf){
     int index = (int)distribution(generator);
     if(!conf->write_map[index]){
       --i;
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
       continue;
     }
     librados::bufferlist bl;

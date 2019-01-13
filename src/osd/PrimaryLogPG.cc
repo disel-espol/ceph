@@ -2802,22 +2802,8 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   bool in_hit_set,
   ObjectContextRef *promote_obc)
 {
-  int tag_cache_mode;
-
-  bufferlist tag_attr;
-  const string tag_attr_str = "_TAG_ATTR";
-
-  int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
-  if(!attr_r){
-    tag_cache_mode = pg_pool_t::CACHEMODE_WRITEBACK;
-  	dout(0) << "HAS ATTR: " << tag_attr.to_str() << dendl;
-  }else{
-    tag_cache_mode = pg_pool_t::CACHEMODE_NONE;
-  	dout(0) << "ERROR: "<< attr_r << " PROB NOT ATTR" << dendl;
-  }
-
   // return quickly if caching is not enabled
-  if (tag_cache_mode == pg_pool_t::CACHEMODE_NONE)
+  if (pool.info.cache_mode == pg_pool_t::CACHEMODE_NONE)
     return cache_result_t::NOOP;
 
   if (op &&
@@ -2880,7 +2866,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
 
   OpRequestRef promote_op;
 
-  switch (tag_cache_mode) {
+  switch (pool.info.cache_mode) {
   case pg_pool_t::CACHEMODE_WRITEBACK:
     if (agent_state &&
 	agent_state->evict_mode == TierAgentState::EVICT_MODE_FULL) {
@@ -3007,9 +2993,6 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
     do_proxy_read(op);
     return cache_result_t::HANDLED_PROXY;
 
-  case pg_pool_t::CACHEMODE_NONE:
-  break;
-  
   default:
     ceph_abort_msg("unrecognized cache_mode");
   }
