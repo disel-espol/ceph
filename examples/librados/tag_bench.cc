@@ -55,6 +55,7 @@ void send_write_reqs(conf_t* conf){
   std::string object_name("hello_object");
 
   std::default_random_engine generator;
+  generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
   std::normal_distribution<double> distribution(conf->mean, conf->std_dev);
 
   for(int i = 0; i < conf->op_count; ++i){
@@ -92,9 +93,11 @@ void send_write_reqs(conf_t* conf){
 }
 
 void send_read_reqs(conf_t* conf){
+  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   std::string object_name("hello_object");
 
   std::default_random_engine generator;
+  generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
   std::normal_distribution<double> distribution(conf->mean, conf->std_dev);
 
   for(int i = 0; i < conf->op_count; ++i){

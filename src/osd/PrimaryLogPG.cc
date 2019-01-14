@@ -9901,13 +9901,6 @@ int PrimaryLogPG::start_flush(
   bool blocking, hobject_t *pmissing,
   boost::optional<std::function<void()>> &&on_flush)
 {
-  bufferlist tag_attr;
-  const string tag_attr_str = "_TAG_ATTR";
-
-  int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
-  if(!attr_r){
-    return 0;
-  }
 
   const object_info_t& oi = obc->obs.oi;
   const hobject_t& soid = oi.soid;
@@ -14137,6 +14130,13 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
     osd->logger->inc(l_osd_agent_skip);
+    return false;
+  }
+  bufferlist tag_attr;
+  const string tag_attr_str = "_TAG_ATTR";
+
+  int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
+  if(!attr_r){
     return false;
   }
 
