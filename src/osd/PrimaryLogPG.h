@@ -56,6 +56,8 @@ void put_with_id(PrimaryLogPG *pg, uint64_t id);
 
 struct inconsistent_snapset_wrapper;
 
+unordered_map<string, unordered_set<hobject_t&>> tag_index;
+
 class PrimaryLogPG : public PG, public PGBackend::Listener {
   friend class OSD;
   friend class Watch;
@@ -1204,7 +1206,6 @@ protected:
    * this is a noop.  If a future user wants to be able to distinguish
    * these cases, a return value should be added.
    */
-  unordered_map<string, unordered_set<hobject_t&>> tag_index;
 
   void promote_object(
     ObjectContextRef obc,            ///< [optional] obc

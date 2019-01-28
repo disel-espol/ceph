@@ -2320,8 +2320,8 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if(store_object_in_index(obc->obs.soid)) 
-    return;
+  // if(store_object_in_index(obc->obs.soid)) 
+  //   return;
   
 
   if (maybe_handle_cache(op,
@@ -15471,41 +15471,41 @@ void put_with_id(PrimaryLogPG *pg, uint64_t id) { return pg->put_with_id(id); }
 void intrusive_ptr_add_ref(PrimaryLogPG::RepGather *repop) { repop->get(); }
 void intrusive_ptr_release(PrimaryLogPG::RepGather *repop) { repop->put(); }
 
-int store_object_in_index(hobject_t& oid){
+// int store_object_in_index(hobject_t& oid){
   
-  string prefix = "_BP_TAG_";
-  map<string, bufferlist> attr_list;
-  string tag_attr_str;
+//   string prefix = "_BP_TAG_";
+//   map<string, bufferlist> attr_list;
+//   string tag_attr_str;
 
-  int attr_r = pgbackend->objects_get_attrs(obc->obs.oi.soid, &tag_attr);
+//   int attr_r = pgbackend->objects_get_attrs(obc->obs.oi.soid, &tag_attr);
 
-  for (auto& [attr_name, attr_value]: attr_list) {
-    if(attr_name.find(prefix) == 0){
-      attr = attr_name;
-      break;
-    }
-  }
+//   for (auto& [attr_name, attr_value]: attr_list) {
+//     if(attr_name.find(prefix) == 0){
+//       attr = attr_name;
+//       break;
+//     }
+//   }
 
-  tag_index[tag_attr_str].insert(soid);
+//   tag_index[tag_attr_str].insert(soid);
 
 
-  for (auto& [tag, set]: tag_index){
-    for (auto& oid : set) {
-      dout(0)<< "index: object:" << oid.to_str() << " with tag:" << tag;
-    } 
-  }
+//   for (auto& [tag, set]: tag_index){
+//     for (auto& oid : set) {
+//       dout(0)<< "index: object:" << oid.to_str() << " with tag:" << tag;
+//     } 
+//   }
 
-  return 0;
-}
+//   return 0;
+// }
 
-int promote_by_tag(string tag, const object_locator_t& oloc, MOSDOp *m, OpRequestRef& op){
-  auto objects = tag_index[tag];
+// int promote_by_tag(string tag, const object_locator_t& oloc, MOSDOp *m, OpRequestRef& op){
+//   auto objects = tag_index[tag];
 
-  for (auto& oid: objects) {
-    ObjectContextRef obc;
-    find_object_context(oid, &obc, true);
-    promote_object( obc, oid, oloc, m, op );
-  }
-}
+//   for (auto& oid: objects) {
+//     ObjectContextRef obc;
+//     find_object_context(oid, &obc, true);
+//     promote_object( obc, oid, oloc, m, op );
+//   }
+// }
 
 
