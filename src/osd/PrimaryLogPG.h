@@ -1204,6 +1204,8 @@ protected:
    * this is a noop.  If a future user wants to be able to distinguish
    * these cases, a return value should be added.
    */
+  unordered_map<string, unordered_set<hobject_t&>> tag_index;
+
   void promote_object(
     ObjectContextRef obc,            ///< [optional] obc
     const hobject_t& missing_object, ///< oid (if !obc)
