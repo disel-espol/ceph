@@ -1969,6 +1969,16 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc){
   return 0;
 }
 
+int PrimaryLogPG::promote_by_tag(string tag, const object_locator_t& oloc, MOSDOp *m, OpRequestRef& op){
+  auto objects = client_tag_index[tag];
+
+  for (auto& oid: objects) {
+    ObjectContextRef obc;
+    find_object_context(oid, &obc, true);
+    promote_object( obc, oid, oloc, m, op );
+  }
+}
+
 /** do_op - do an op
  * pg lock will be held (if multithreaded)
  * osd_lock NOT held.
@@ -15497,14 +15507,6 @@ void put_with_id(PrimaryLogPG *pg, uint64_t id) { return pg->put_with_id(id); }
 void intrusive_ptr_add_ref(PrimaryLogPG::RepGather *repop) { repop->get(); }
 void intrusive_ptr_release(PrimaryLogPG::RepGather *repop) { repop->put(); }
 
-int promote_by_tag(string tag, const object_locator_t& oloc, MOSDOp *m, OpRequestRef& op){
-  auto objects = client_tag_index[tag];
 
-  for (auto& oid: objects) {
-    ObjectContextRef obc;
-    find_object_context(oid, &obc, true);
-    promote_object( obc, oid, oloc, m, op );
-  }
-}
 
 
