@@ -1217,7 +1217,7 @@ protected:
     ObjectContextRef *promote_obc = nullptr ///< [optional] new obc for object
     );
 
-  int store_object_in_index(hobject_t& oid, boost::scoped_ptr<PGBackend> pgbackend);
+  int store_object_in_index(ObjectContextRef obc, boost::scoped_ptr<PGBackend> pgbackend);
 
   int prepare_transaction(OpContext *ctx);
   list<pair<OpRequestRef, OpContext*> > in_progress_async_reads;

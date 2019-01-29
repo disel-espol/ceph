@@ -1943,7 +1943,7 @@ hobject_t PrimaryLogPG::earliest_backfill() const
   return e;
 }
 
-int PrimaryLogPG::store_object_in_index(hobject_t& oid, boost::scoped_ptr<PGBackend> pgbackend){
+int PrimaryLogPG::store_object_in_index(ObjectContextRef obc){
   
   string prefix = "_BP_TAG_";
   map<string, bufferlist> attr_list;
@@ -1958,7 +1958,7 @@ int PrimaryLogPG::store_object_in_index(hobject_t& oid, boost::scoped_ptr<PGBack
     }
   }
 
-  client_tag_index[tag_attr_str].insert(soid);
+  client_tag_index[tag_attr_str].insert(obc->obs.oi.soid);
 
 
   for (auto& [tag, set]: client_tag_index){
@@ -2347,7 +2347,7 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if(store_object_in_index(obc->obs.oi.soid, pgbackend)) 
+  if(store_object_in_index(obc, pgbackend)) 
     return;
   
 
