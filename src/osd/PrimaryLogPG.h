@@ -1218,7 +1218,7 @@ protected:
     );
 
   int store_object_in_index(ObjectContextRef obc);
-  int PrimaryLogPG::promote_by_tag(string tag, const object_locator_t& oloc, OpRequestRef& op);
+  int promote_by_tag(string tag, const object_locator_t& oloc, OpRequestRef& op);
 
   int prepare_transaction(OpContext *ctx);
   list<pair<OpRequestRef, OpContext*> > in_progress_async_reads;
