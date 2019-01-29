@@ -68,7 +68,9 @@ void send_write_reqs(conf_t* conf){
     if( std::abs(index - (int)conf->mean) < (int)(conf->std_dev * conf->tag_dev)){
       librados::bufferlist tag_bl;
       tag_bl.append("tag");
-      write_op.setxattr("TAG_ATTR", tag_bl);
+      stringstream tag_ss;
+      tag_ss << "BP_TAG_" << i % 3;
+      write_op.setxattr(tag_ss.str(), tag_bl);
       std::cout << "tagged index: " << index << std::endl;
     } else {
       std::cout << "not tagged index: " << index << std::endl;
@@ -255,31 +257,31 @@ int main(int argc, const char **argv)
     500.0,              //mean
     40.0,               //std_dev
     1.0,                //tag_dev
-    1000,               //op_count
+    100,               //op_count
     read_histogram,     //read histogram
     write_histogram,    //write histogram
     false               //exit reporter
    };
 
   std::thread writes(send_write_reqs, &conf);
-  std::thread reads(send_read_reqs, &conf);
-  std::thread reporter(report, &conf);
+  //std::thread reads(send_read_reqs, &conf);
+  //std::thread reporter(report, &conf);
 
   writes.join();
-  reads.join();
+  //reads.join();
 
-  conf.exit_reporter = true;
+  //conf.exit_reporter = true;
 
-  reporter.join();
+  //reporter.join();
 
   rados.shutdown();
 
-  hdr_percentiles_print(
-    read_histogram,
-    stdout,  // File to write to
-    5,  // Granularity of printed values
-    1.0,  // Multiplier for results
-    CLASSIC);
+  // hdr_percentiles_print(
+  //   read_histogram,
+  //   stdout,  // File to write to
+  //   5,  // Granularity of printed values
+  //   1.0,  // Multiplier for results
+  //   CLASSIC);
   
   hdr_percentiles_print(
     write_histogram,

@@ -56,7 +56,6 @@ void put_with_id(PrimaryLogPG *pg, uint64_t id);
 
 struct inconsistent_snapset_wrapper;
 
-unordered_map<string, unordered_set<hobject_t&>> tag_index;
 
 class PrimaryLogPG : public PG, public PGBackend::Listener {
   friend class OSD;
@@ -64,6 +63,9 @@ class PrimaryLogPG : public PG, public PGBackend::Listener {
 
 public:
   MEMPOOL_CLASS_HELPERS();
+
+  unordered_map<string, unordered_set<hobject_t>> client_tag_index;
+
 
   /*
    * state associated with a copy operation
@@ -1214,6 +1216,8 @@ protected:
     OpRequestRef op,                 ///< [optional] client op
     ObjectContextRef *promote_obc = nullptr ///< [optional] new obc for object
     );
+
+  int store_object_in_index(hobject_t& oid, boost::scoped_ptr<PGBackend> pgbackend);
 
   int prepare_transaction(OpContext *ctx);
   list<pair<OpRequestRef, OpContext*> > in_progress_async_reads;
