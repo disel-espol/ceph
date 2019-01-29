@@ -2346,7 +2346,7 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if(store_object_in_index(obc, pgbackend)) 
+  if(store_object_in_index(obc)) 
     return;
   
 
