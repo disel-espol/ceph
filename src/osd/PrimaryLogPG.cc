@@ -1969,13 +1969,15 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc){
   return 0;
 }
 
-int PrimaryLogPG::promote_by_tag(string tag, const object_locator_t& oloc, MOSDOp *m, OpRequestRef& op){
+int PrimaryLogPG::promote_by_tag(string tag, const object_locator_t& oloc, OpRequestRef& op){
   auto objects = client_tag_index[tag];
 
   for (auto& oid: objects) {
     ObjectContextRef obc;
     find_object_context(oid, &obc, true);
-    promote_object( obc, oid, oloc, m, op );
+    ObjectContextRef promote_obc;
+
+    promote_object( obc, oid, oloc, op, &promote_obc);
   }
 }
 
