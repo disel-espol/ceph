@@ -1949,11 +1949,11 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc){
   map<string, bufferlist> attr_list;
   string tag_attr_str;
 
-  int attr_r = pgbackend->objects_get_attrs(obc->obs.oi.soid, &tag_attr);
+  int attr_r = pgbackend->objects_get_attrs(obc->obs.oi.soid, &attr_list);
 
   for (auto& [attr_name, attr_value]: attr_list) {
     if(attr_name.find(prefix) == 0){
-      attr = attr_name;
+      tag_attr_str = attr_name;
       break;
     }
   }
