@@ -57,7 +57,8 @@ void send_write_reqs(conf_t* conf){
   std::default_random_engine generator;
   generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
   for(int y = 0; y < 3; ++y){
-    std::normal_distribution<double> distribution(conf->mean * (double)y, conf->std_dev);
+    double it_mean = conf->mean * (double)(y + 1);
+    std::normal_distribution<double> distribution(it_mean, conf->std_dev);
     for(int i = 0; i < conf->op_count; ++i){
       int index = (int)distribution(generator);
       librados::bufferlist bl;
@@ -65,7 +66,7 @@ void send_write_reqs(conf_t* conf){
       bl.append("v2");
       librados::ObjectWriteOperation write_op;
       write_op.write_full(bl);
-      if( std::abs(index - (int)conf->mean) < (int)(conf->std_dev * conf->tag_dev)){
+      if( std::abs(index - it_mean) < (int)(conf->std_dev * conf->tag_dev)){
         librados::bufferlist tag_bl;
         tag_bl.append("tag");
         std::stringstream tag_ss;
