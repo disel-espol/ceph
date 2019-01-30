@@ -1958,11 +1958,15 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc){
     }
   }
 
+  dout(0) << "received object:" << oid.to_str() << " with tag:" << tag << dendl;
+
+
   client_tag_index[tag_attr_str].insert(obc->obs.oi.soid);
 
   for (auto& [tag, set]: client_tag_index){
+    int i = 0;
     for (auto& oid : set) {
-      dout(0) << "index: object:" << oid.to_str() << " with tag:" << tag << dendl;
+      dout(0) << "index[" << i << "]:" "object:" << oid.to_str() << " with tag:" << tag << dendl;
     } 
   }
 
