@@ -1218,7 +1218,7 @@ protected:
     );
 
   string current_bp_tag;
-  int store_object_in_index(ObjectContextRef obc);
+  int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, const object_locator_t& oloc, OpRequestRef& op);
   int promote_by_tag(string tag, const object_locator_t& oloc, OpRequestRef& op);
 
   int prepare_transaction(OpContext *ctx);

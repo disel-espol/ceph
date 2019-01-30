@@ -1943,7 +1943,7 @@ hobject_t PrimaryLogPG::earliest_backfill() const
   return e;
 }
 
-int PrimaryLogPG::store_object_in_index(ObjectContextRef obc){
+int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, const object_locator_t& oloc, OpRequestRef& op){
   
   string prefix = "_BP_TAG_";
   map<string, bufferlist> attr_list;
@@ -1956,7 +1956,10 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc){
       tag_attr_str = attr_name;
       dout(0) << "received object:" << obc->obs.oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
       client_tag_index[tag_attr_str].insert(obc->obs.oi.soid);
-      current_bp_tag = tag_attr_str;
+      if(current_bp_tag.compare(tag_attr_str) != 0){
+        promote_by_tag(tag_attr_str, oloc, op);
+        current_bp_tag = tag_attr_str;
+      }
       break;
     }else{
       dout(0) << "xattr skipped: " << attr_name << dendl;
@@ -2363,7 +2366,17 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if(store_object_in_index(obc)) 
+  // make sure locator is consistent
+  object_locator_t oloc(obc->obs.oi.soid);
+  if (m->get_object_locator() != oloc) {
+    dout(10) << " provided locator " << m->get_object_locator() 
+	     << " != object's " << obc->obs.oi.soid << dendl;
+    osd->clog->warn() << "bad locator " << m->get_object_locator() 
+		     << " on object " << oloc
+		      << " op " << *m;
+  }
+
+  if(store_object_in_index(obc, oloc, op))
     return;
   
 
@@ -2393,15 +2406,6 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  // make sure locator is consistent
-  object_locator_t oloc(obc->obs.oi.soid);
-  if (m->get_object_locator() != oloc) {
-    dout(10) << " provided locator " << m->get_object_locator() 
-	     << " != object's " << obc->obs.oi.soid << dendl;
-    osd->clog->warn() << "bad locator " << m->get_object_locator() 
-		     << " on object " << oloc
-		      << " op " << *m;
-  }
 
   // io blocked on obc?
   if (obc->is_blocked() &&
