@@ -70,7 +70,8 @@ void send_write_reqs(conf_t* conf){
         tag_bl.append("tag");
         std::stringstream tag_ss;
         tag_ss << "BP_TAG_" << y;
-        write_op.setxattr(tag_ss.str(), tag_bl);
+        write_op.setxattr(tag_ss.str().c_str(), tag_bl);
+        std::cout << tag_ss.str().c_str() << std::endl;
         std::cout << "tagged index: " << index << "." << y << std::endl;
       } else {
         std::cout << "not tagged index: " << index << "." << y << std::endl;
