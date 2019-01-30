@@ -68,7 +68,7 @@ void send_write_reqs(conf_t* conf){
       if( std::abs(index - (int)conf->mean) < (int)(conf->std_dev * conf->tag_dev)){
         librados::bufferlist tag_bl;
         tag_bl.append("tag");
-        stringstream tag_ss;
+        std::stringstream tag_ss;
         tag_ss << "BP_TAG_" << y;
         write_op.setxattr(tag_ss.str(), tag_bl);
         std::cout << "tagged index: " << index << "." << y << std::endl;
