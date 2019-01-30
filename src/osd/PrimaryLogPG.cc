@@ -1943,7 +1943,7 @@ hobject_t PrimaryLogPG::earliest_backfill() const
   return e;
 }
 
-int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, const object_locator_t& oloc, OpRequestRef& op){
+int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, OpRequestRef& op){
   
   string prefix = "_BP_TAG_";
   map<string, bufferlist> attr_list;
@@ -1957,7 +1957,7 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, const object_locat
       dout(0) << "received object:" << obc->obs.oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
       client_tag_index[tag_attr_str].insert(obc->obs.oi.soid);
       if(current_bp_tag.compare(tag_attr_str) != 0){
-        promote_by_tag(tag_attr_str, oloc, op);
+        promote_by_tag(tag_attr_str, op);
         current_bp_tag = tag_attr_str;
       }
       break;
@@ -1977,7 +1977,7 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, const object_locat
   return 0;
 }
 
-int PrimaryLogPG::promote_by_tag(string tag, const object_locator_t& oloc, OpRequestRef& op){
+int PrimaryLogPG::promote_by_tag(string tag, OpRequestRef& op){
   auto objects = client_tag_index[tag];
 
   for (auto& oid: objects) {
@@ -1985,6 +1985,7 @@ int PrimaryLogPG::promote_by_tag(string tag, const object_locator_t& oloc, OpReq
     find_object_context(oid, &obc, true);
     ObjectContextRef promote_obc;
 
+    object_locator_t oloc(obc->obs.oi.soid);
     promote_object( obc, oid, oloc, op, &promote_obc);
   }
 }
@@ -2366,19 +2367,8 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  // make sure locator is consistent
-  object_locator_t oloc(obc->obs.oi.soid);
-  if (m->get_object_locator() != oloc) {
-    dout(10) << " provided locator " << m->get_object_locator() 
-	     << " != object's " << obc->obs.oi.soid << dendl;
-    osd->clog->warn() << "bad locator " << m->get_object_locator() 
-		     << " on object " << oloc
-		      << " op " << *m;
-  }
-
-  if(store_object_in_index(obc, oloc, op))
+  if(store_object_in_index(obc, op))
     return;
-  
 
   if (maybe_handle_cache(op,
 			 write_ordered,
@@ -2404,6 +2394,16 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
       osd->reply_op_error(op, r);
     }
     return;
+  }
+
+  // make sure locator is consistent
+  object_locator_t oloc(obc->obs.oi.soid);
+  if (m->get_object_locator() != oloc) {
+    dout(10) << " provided locator " << m->get_object_locator() 
+	     << " != object's " << obc->obs.oi.soid << dendl;
+    osd->clog->warn() << "bad locator " << m->get_object_locator() 
+		     << " on object " << oloc
+		      << " op " << *m;
   }
 
 
