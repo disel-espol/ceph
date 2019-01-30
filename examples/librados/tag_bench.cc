@@ -56,40 +56,41 @@ void send_write_reqs(conf_t* conf){
 
   std::default_random_engine generator;
   generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
-  std::normal_distribution<double> distribution(conf->mean, conf->std_dev);
-
-  for(int i = 0; i < conf->op_count; ++i){
-    int index = (int)distribution(generator);
-    librados::bufferlist bl;
-    bl.append(conf->object_data);
-    bl.append("v2");
-    librados::ObjectWriteOperation write_op;
-    write_op.write_full(bl);
-    if( std::abs(index - (int)conf->mean) < (int)(conf->std_dev * conf->tag_dev)){
-      librados::bufferlist tag_bl;
-      tag_bl.append("tag");
-      stringstream tag_ss;
-      tag_ss << "BP_TAG_" << i % 3;
-      write_op.setxattr(tag_ss.str(), tag_bl);
-      std::cout << "tagged index: " << index << std::endl;
-    } else {
-      std::cout << "not tagged index: " << index << std::endl;
-    }
-    std::stringstream ss;
-    ss << object_name << "." << index; 
-    auto start_us = getus();
-    //std::this_thread::sleep_for(std::chrono::milliseconds(2));   
-    //int ret = 0; 
-    int ret = conf->io_ctx.operate(ss.str(), &write_op);
-    auto latency_us = getus() - start_us;
-    if (ret < 0) {
-      std::cerr << "failed to do compound write! error " << ret << std::endl;
-      break;
-    } else {
-      // std::cout << "we wrote our object " << object_name << " with contents\n" << bl.c_str() << std::endl;
-      conf->write_map[index] = true;
-      hdr_record_value(conf->write_histogram, latency_us);
-      write_ps.fetch_add(1);
+  for(int y = 0; y < 3; ++y){
+    std::normal_distribution<double> distribution(conf->mean * (double)y, conf->std_dev);
+    for(int i = 0; i < conf->op_count; ++i){
+      int index = (int)distribution(generator);
+      librados::bufferlist bl;
+      bl.append(conf->object_data);
+      bl.append("v2");
+      librados::ObjectWriteOperation write_op;
+      write_op.write_full(bl);
+      if( std::abs(index - (int)conf->mean) < (int)(conf->std_dev * conf->tag_dev)){
+        librados::bufferlist tag_bl;
+        tag_bl.append("tag");
+        stringstream tag_ss;
+        tag_ss << "BP_TAG_" << y;
+        write_op.setxattr(tag_ss.str(), tag_bl);
+        std::cout << "tagged index: " << index << "." << y << std::endl;
+      } else {
+        std::cout << "not tagged index: " << index << "." << y << std::endl;
+      }
+      std::stringstream ss;
+      ss << object_name << "." << index << "." << y; 
+      auto start_us = getus();
+      //std::this_thread::sleep_for(std::chrono::milliseconds(2));   
+      //int ret = 0; 
+      int ret = conf->io_ctx.operate(ss.str(), &write_op);
+      auto latency_us = getus() - start_us;
+      if (ret < 0) {
+        std::cerr << "failed to do compound write! error " << ret << std::endl;
+        break;
+      } else {
+        // std::cout << "we wrote our object " << object_name << " with contents\n" << bl.c_str() << std::endl;
+        conf->write_map[index] = true;
+        hdr_record_value(conf->write_histogram, latency_us);
+        write_ps.fetch_add(1);
+      }
     }
   }
 }

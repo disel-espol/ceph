@@ -1217,6 +1217,7 @@ protected:
     ObjectContextRef *promote_obc = nullptr ///< [optional] new obc for object
     );
 
+  string current_bp_tag;
   int store_object_in_index(ObjectContextRef obc);
   int promote_by_tag(string tag, const object_locator_t& oloc, OpRequestRef& op);
 

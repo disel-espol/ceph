@@ -1954,14 +1954,14 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc){
   for (auto& [attr_name, attr_value]: attr_list) {
     if(attr_name.find(prefix) == 0){
       tag_attr_str = attr_name;
+      dout(0) << "received object:" << obc->obs.oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
+      client_tag_index[tag_attr_str].insert(obc->obs.oi.soid);
+      current_bp_tag = tag_attr_str;
       break;
+    }else{
+      dout(0) << "xattr skipped: " << attr_name << dendl;
     }
   }
-
-  dout(0) << "received object:" << obc->obs.oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
-
-
-  client_tag_index[tag_attr_str].insert(obc->obs.oi.soid);
 
   for (auto& [tag, set]: client_tag_index){
     int i = 0;
@@ -14180,7 +14180,7 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
     return false;
   }
   bufferlist tag_attr;
-  const string tag_attr_str = "_TAG_ATTR";
+  const string tag_attr_str = current_bp_tag;
 
   int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
   if(!attr_r){
