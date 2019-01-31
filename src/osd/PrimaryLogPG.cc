@@ -14191,7 +14191,7 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
   // int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
   // if(!attr_r){
   //   return false;
-  }
+  // }
 
   utime_t now = ceph_clock_now();
   utime_t ob_local_mtime;
