@@ -2367,8 +2367,10 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if(store_object_in_index(obc, op))
-    return;
+  if (obc.get()) {
+    if(store_object_in_index(obc, op))
+      return;
+  }
 
   if (maybe_handle_cache(op,
 			 write_ordered,
