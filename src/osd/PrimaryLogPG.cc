@@ -2367,10 +2367,10 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if (obc.get()) {
-    if(store_object_in_index(obc, op))
-      return;
-  }
+  // if (obc.get()) {
+  //   if(store_object_in_index(obc, op))
+  //     return;
+  // }
 
   if (maybe_handle_cache(op,
 			 write_ordered,
@@ -14185,12 +14185,12 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
     osd->logger->inc(l_osd_agent_skip);
     return false;
   }
-  bufferlist tag_attr;
-  const string tag_attr_str = current_bp_tag;
+  // bufferlist tag_attr;
+  // const string tag_attr_str = current_bp_tag;
 
-  int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
-  if(!attr_r){
-    return false;
+  // int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
+  // if(!attr_r){
+  //   return false;
   }
 
   utime_t now = ceph_clock_now();
