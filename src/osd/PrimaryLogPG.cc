@@ -14196,7 +14196,7 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
   if(current_bp_tag.compare("")){
     int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, current_bp_tag, &tag_attr);
     dout(0) << __func__ << " get_attr ret:  " << attr_r << dendl;
-    if(attr_r){
+    if(!attr_r){
       return false;
     }
   }
