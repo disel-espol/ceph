@@ -1956,7 +1956,10 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, OpRequestRef& op){
       tag_attr_str = attr_name;
       dout(0) << "received object:" << obc->obs.oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
       client_tag_index[tag_attr_str].insert(obc->obs.oi.soid);
-      if(current_bp_tag.compare(tag_attr_str) != 0){
+      int cmp = current_bp_tag.compare(tag_attr_str);
+      dout(0) << "tag comparison: " << current_bp_tag << " to: " << tag_attr_str  << " result: " << cmp << dendl;
+      
+      if(cmp != 0){
         dout(0) << "changed tag from: " << current_bp_tag << " to: " << tag_attr_str << dendl;
         dout(0) << "PROMOTING" << dendl;
         promote_by_tag(tag_attr_str, op);
