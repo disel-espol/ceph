@@ -14191,10 +14191,9 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
     return false;
   }
   bufferlist tag_attr;
-  const string tag_attr_str = current_bp_tag;
-  dout(0) << __func__ << " flushing objects woth tag different to " << tag_attr_str << dendl;
+  dout(0) << __func__ << " flushing objects woth tag different to " << current_bp_tag << dendl;
 
-  int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, tag_attr_str, &tag_attr);
+  int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, current_bp_tag, &tag_attr);
   dout(0) << __func__ << " get_attr ret:  " << attr_r << dendl;
   if(attr_r){
     return false;
