@@ -6674,7 +6674,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 	  obs.oi.clear_data_digest();
 	}
 
-  maybe_set_tag_cache_pinned(obs.oi, op);
+  maybe_set_tag_cache_pinned(obs.oi, ctx->op);
 
 	write_update_size_and_usage(ctx->delta_stats, oi, ctx->modified_ranges,
 	    0, op.extent.length, true);
