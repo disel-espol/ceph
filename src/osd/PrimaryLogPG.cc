@@ -2049,6 +2049,7 @@ int PrimaryLogPG::promote_by_tag(string tag, OpRequestRef& op){
     object_locator_t oloc(obc->obs.oi.soid);
     promote_object( obc, oid, oloc, op, &promote_obc);
   }
+  return 0;
 }
 
 /** do_op - do an op
