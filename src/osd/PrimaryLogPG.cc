@@ -15557,7 +15557,7 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
         //
 
         dout(0) << "matches current tag: " << current_bp_tag << " setting as tag pinned " << dendl;
-        oi.set_flag(object_info_t::FLAG_TAG_CACHE_PINNED);
+        oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
       } 
       break;
     }
@@ -15582,7 +15582,7 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
       //optimize, dont modify the flags every time
       if(cmp != 0){ 
         dout(0) << "does no match current tag: " << current_bp_tag << " setting as tag unpinned " << dendl;
-        oi.clear_flag(object_info_t::FLAG_TAG_CACHE_PINNED);
+        oi.clear_flag(object_info_t::FLAG_TAG_CACHE_PIN);
       } 
       break;
     }
