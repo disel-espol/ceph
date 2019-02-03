@@ -1962,7 +1962,7 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, OpRequestRef& op){
       if(cmp != 0){
         dout(0) << "changed tag from: " << current_bp_tag << " to: " << tag_attr_str << dendl;
         dout(0) << "PROMOTING" << dendl;
-        promote_by_tag(tag_attr_str, op);
+        //promote_by_tag(tag_attr_str, op);
         current_bp_tag = tag_attr_str;
       }
       break;
@@ -14269,6 +14269,15 @@ bool PrimaryLogPG::agent_maybe_evict(ObjectContextRef& obc, bool after_flush)
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
     return false;
+  }
+
+  bufferlist tag_attr;
+  if(current_bp_tag.compare("")){
+    int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, current_bp_tag, &tag_attr);
+    dout(0) << __func__ << " get_attr ret:  " << attr_r << dendl;
+    if(!attr_r){
+      return false;
+    }
   }
 
   if (soid.snap == CEPH_NOSNAP) {
