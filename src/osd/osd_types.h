@@ -5121,7 +5121,7 @@ struct object_info_t {
     return test_flag(FLAG_OMAP_DIGEST);
   }
   bool is_cache_pinned() const {
-    return test_flag(FLAG_CACHE_PIN & FLAG_TAG_CACHE_PIN);
+    return test_flag(FLAG_CACHE_PIN) || test_flag(FLAG_TAG_CACHE_PIN);
   }
   bool has_manifest() const {
     return test_flag(FLAG_MANIFEST);
