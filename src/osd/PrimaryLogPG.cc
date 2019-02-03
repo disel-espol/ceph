@@ -1982,7 +1982,7 @@ int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, OpRequestRef& op){
   return 0;
 }
 
-int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
+int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op){
   string prefix = "_BP_TAG_";
   map<string, bufferlist> attr_list;
   string tag_attr_str;
@@ -2004,6 +2004,7 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
       } else {
         //this should not be here, but for testing is fine:
         current_bp_tag = tag_attr_str;
+        promote_by_tag(current_bp_tag, op);
         //
       }
       break;
@@ -2023,7 +2024,6 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
     if(attr_name.find(prefix) == 0){
       tag_attr_str = attr_name;
       dout(0) << "received object:" << oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
-      client_tag_index[tag_attr_str].insert(oi.soid);
       int cmp = current_bp_tag.compare(tag_attr_str);
       dout(0) << "tag comparison: " << current_bp_tag << " to: " << tag_attr_str  << " result: " << cmp << dendl;
       
@@ -6674,7 +6674,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 	  obs.oi.clear_data_digest();
 	}
 
-  maybe_set_tag_cache_pinned(obs.oi);
+  maybe_set_tag_cache_pinned(obs.oi, op);
 
 	write_update_size_and_usage(ctx->delta_stats, oi, ctx->modified_ranges,
 	    0, op.extent.length, true);
@@ -14252,7 +14252,7 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
     return false;
   }
   bufferlist tag_attr;
-  dout(0) << __func__ << " flushing objects woth tag different to " << current_bp_tag << dendl;
+  dout(0) << __func__ << " flushing object without tag: " << current_bp_tag << dendl;
 
   utime_t now = ceph_clock_now();
   utime_t ob_local_mtime;
@@ -14322,15 +14322,6 @@ bool PrimaryLogPG::agent_maybe_evict(ObjectContextRef& obc, bool after_flush)
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
     return false;
-  }
-
-  bufferlist tag_attr;
-  if(current_bp_tag.compare("")){
-    int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, current_bp_tag, &tag_attr);
-    dout(0) << __func__ << " get_attr ret:  " << attr_r << dendl;
-    if(!attr_r){
-      return false;
-    }
   }
 
   if (soid.snap == CEPH_NOSNAP) {
