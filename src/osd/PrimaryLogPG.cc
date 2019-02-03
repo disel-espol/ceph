@@ -1999,14 +1999,13 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
       
       //optimize, dont modify the flags every time
       if(cmp == 0){ 
-
+        dout(0) << "matches current tag: " << current_bp_tag << " setting as tag pinned " << dendl;
+        oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
+      } else {
         //this should not be here, but for testing is fine:
         current_bp_tag = tag_attr_str;
         //
-
-        dout(0) << "matches current tag: " << current_bp_tag << " setting as tag pinned " << dendl;
-        oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
-      } 
+      }
       break;
     }
   }
