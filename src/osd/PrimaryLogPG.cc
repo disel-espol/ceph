@@ -2372,10 +2372,10 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if (obc.get()) {
-    if(store_object_in_index(obc, op))
-      return;
-  }
+  // if (obc.get()) {
+  //   if(store_object_in_index(obc, op))
+  //     return;
+  // }
 
   if (maybe_handle_cache(op,
 			 write_ordered,
@@ -6617,6 +6617,8 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
         } else {
 	  obs.oi.clear_data_digest();
 	}
+
+  maybe_set_tag_cache_pinned(obs.oi);
 
 	write_update_size_and_usage(ctx->delta_stats, oi, ctx->modified_ranges,
 	    0, op.extent.length, true);
@@ -14185,6 +14187,9 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
     osd->logger->inc(l_osd_agent_skip);
     return false;
   }
+
+  maybe_clear_tag_cache_pinned(obc->obs.oi);
+
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
     osd->logger->inc(l_osd_agent_skip);
@@ -14192,14 +14197,6 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
   }
   bufferlist tag_attr;
   dout(0) << __func__ << " flushing objects woth tag different to " << current_bp_tag << dendl;
-
-  if(current_bp_tag.compare("")){
-    int attr_r = pgbackend->objects_get_attr(obc->obs.oi.soid, current_bp_tag, &tag_attr);
-    dout(0) << __func__ << " get_attr ret:  " << attr_r << dendl;
-    if(!attr_r){
-      return false;
-    }
-  }
 
   utime_t now = ceph_clock_now();
   utime_t ob_local_mtime;
@@ -15536,6 +15533,61 @@ void put_with_id(PrimaryLogPG *pg, uint64_t id) { return pg->put_with_id(id); }
 
 void intrusive_ptr_add_ref(PrimaryLogPG::RepGather *repop) { repop->get(); }
 void intrusive_ptr_release(PrimaryLogPG::RepGather *repop) { repop->put(); }
+
+int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
+  string prefix = "_BP_TAG_";
+  map<string, bufferlist> attr_list;
+  string tag_attr_str;
+
+  int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
+
+  for (auto& [attr_name, attr_value]: attr_list) {
+    if(attr_name.find(prefix) == 0){
+      tag_attr_str = attr_name;
+      dout(0) << "received object:" << oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
+      client_tag_index[tag_attr_str].insert(oi.soid);
+      int cmp = current_bp_tag.compare(tag_attr_str);
+      dout(0) << "tag comparison: " << current_bp_tag << " to: " << tag_attr_str  << " result: " << cmp << dendl;
+      
+      //optimize, dont modify the flags every time
+      if(cmp == 0){ 
+
+        //this should not be here, but for testing is fine:
+        current_bp_tag = tag_attr_str;
+        //
+
+        dout(0) << "matches current tag: " << current_bp_tag << " setting as tag pinned " << dendl;
+        oi.set_flag(object_info_t::FLAG_TAG_CACHE_PINNED);
+      } 
+      break;
+    }
+  }
+}
+
+int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
+  string prefix = "_BP_TAG_";
+  map<string, bufferlist> attr_list;
+  string tag_attr_str;
+
+  int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
+
+  for (auto& [attr_name, attr_value]: attr_list) {
+    if(attr_name.find(prefix) == 0){
+      tag_attr_str = attr_name;
+      dout(0) << "received object:" << oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
+      client_tag_index[tag_attr_str].insert(oi.soid);
+      int cmp = current_bp_tag.compare(tag_attr_str);
+      dout(0) << "tag comparison: " << current_bp_tag << " to: " << tag_attr_str  << " result: " << cmp << dendl;
+      
+      //optimize, dont modify the flags every time
+      if(cmp != 0){ 
+        dout(0) << "does no match current tag: " << current_bp_tag << " setting as tag unpinned " << dendl;
+        oi.clear_flag(object_info_t::FLAG_TAG_CACHE_PINNED);
+      } 
+      break;
+    }
+  }
+}
 
 
 

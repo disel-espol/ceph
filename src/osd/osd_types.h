@@ -5032,6 +5032,7 @@ struct object_info_t {
     FLAG_MANIFEST    = 1<<7, // has manifest
     FLAG_USES_TMAP   = 1<<8, // deprecated; no longer used
     FLAG_REDIRECT_HAS_REFERENCE = 1<<9, // has reference
+    FLAG_TAG_CACHE_PINNED = 1<<10, // has reference
   } flag_t;
 
   flag_t flags;
@@ -5064,6 +5065,8 @@ struct object_info_t {
       sv.insert(sv.end(), "omap_digest");
     if (flags & FLAG_CACHE_PIN)
       sv.insert(sv.end(), "cache_pin");
+      if (flags & FLAG_TAG_CACHE_PIN)
+      sv.insert(sv.end(), "tag_cache_pin");
     if (flags & FLAG_MANIFEST)
       sv.insert(sv.end(), "manifest");
     if (flags & FLAG_REDIRECT_HAS_REFERENCE)
@@ -5118,7 +5121,7 @@ struct object_info_t {
     return test_flag(FLAG_OMAP_DIGEST);
   }
   bool is_cache_pinned() const {
-    return test_flag(FLAG_CACHE_PIN);
+    return test_flag(FLAG_CACHE_PIN || FLAG_TAG_CACHE_PINNED);
   }
   bool has_manifest() const {
     return test_flag(FLAG_MANIFEST);
