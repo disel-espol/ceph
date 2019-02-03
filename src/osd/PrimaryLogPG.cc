@@ -2010,6 +2010,7 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
       break;
     }
   }
+  return 0;
 }
 
 int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
@@ -2035,6 +2036,7 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
       break;
     }
   }
+  return 0;
 }
 
 int PrimaryLogPG::promote_by_tag(string tag, OpRequestRef& op){
