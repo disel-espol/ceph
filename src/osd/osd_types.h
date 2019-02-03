@@ -5065,7 +5065,7 @@ struct object_info_t {
       sv.insert(sv.end(), "omap_digest");
     if (flags & FLAG_CACHE_PIN)
       sv.insert(sv.end(), "cache_pin");
-      if (flags & FLAG_TAG_CACHE_PIN)
+    if (flags & FLAG_TAG_CACHE_PIN)
       sv.insert(sv.end(), "tag_cache_pin");
     if (flags & FLAG_MANIFEST)
       sv.insert(sv.end(), "manifest");
