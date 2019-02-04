@@ -2001,12 +2001,12 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op
       if(cmp == 0){ 
         dout(0) << "matches current tag: " << current_bp_tag << " setting as tag pinned " << dendl;
         oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
-      } else {
+      } //else {
         //this should not be here, but for testing is fine:
-        current_bp_tag = tag_attr_str;
-        promote_by_tag(current_bp_tag, op);
+        //current_bp_tag = tag_attr_str;
+        //promote_by_tag(current_bp_tag, op);
         //
-      }
+      //}
       break;
     }
   }
@@ -6675,7 +6675,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 	  obs.oi.clear_data_digest();
 	}
 
-  //maybe_set_tag_cache_pinned(obs.oi, ctx->op);
+  maybe_set_tag_cache_pinned(obs.oi, ctx->op);
 
 	write_update_size_and_usage(ctx->delta_stats, oi, ctx->modified_ranges,
 	    0, op.extent.length, true);
@@ -14245,7 +14245,7 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
     return false;
   }
 
-  //maybe_clear_tag_cache_pinned(obc->obs.oi);
+  maybe_clear_tag_cache_pinned(obc->obs.oi);
 
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
@@ -14320,7 +14320,7 @@ bool PrimaryLogPG::agent_maybe_evict(ObjectContextRef& obc, bool after_flush)
     dout(20) << __func__ << " skip (blocked) " << obc->obs.oi << dendl;
     return false;
   }
-  //maybe_clear_tag_cache_pinned(obc->obs.oi);
+  maybe_clear_tag_cache_pinned(obc->obs.oi);
 
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
