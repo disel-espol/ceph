@@ -2004,7 +2004,7 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op
       } else {
         //this should not be here, but for testing is fine:
         current_bp_tag = tag_attr_str;
-        //promote_by_tag(current_bp_tag, op);
+        promote_by_tag(current_bp_tag, op);
         //
       }
       break;
