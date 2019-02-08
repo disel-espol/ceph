@@ -2004,7 +2004,7 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op
       } else {
         //this should not be here, but for testing is fine:
         current_bp_tag = tag_attr_str;
-        promote_by_tag(current_bp_tag, nullptr);
+        promote_by_tag(current_bp_tag, op);
         //
       }
       break;
@@ -2047,7 +2047,7 @@ int PrimaryLogPG::promote_by_tag(string tag, OpRequestRef& op){
     ObjectContextRef promote_obc;
 
     object_locator_t oloc(obc->obs.oi.soid);
-    promote_object( obc, oid, oloc, op, &promote_obc);
+    promote_object( obc, oid, oloc, nullptr, &promote_obc);
   }
   return 0;
 }
