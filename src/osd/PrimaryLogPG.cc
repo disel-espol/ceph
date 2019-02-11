@@ -1953,7 +1953,6 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op
   for (auto& [attr_name, attr_value]: attr_list) {
     if(attr_name.find(prefix) == 0){
       tag_attr_str = attr_name;
-      client_tag_index[tag_attr_str].insert(oi.soid);
       int cmp = current_bp_tag.compare(tag_attr_str);
       
       //optimize, dont modify the flags every time
@@ -1961,11 +1960,12 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op
         oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
       } else {
         //this should not be here, but for testing is fine:
-        current_bp_tag = tag_attr_str;
         promote_by_tag(current_bp_tag, op);
-        dout(0) << "promoting object with tag: "  << tag_attr_str << dendl;
+        dout(0) << "promoting object with tag: " << tag_attr_str << dendl;
         //
+        current_bp_tag = tag_attr_str;
       }
+      client_tag_index[tag_attr_str].insert(oi.soid);
       break;
     }
   }
@@ -14209,7 +14209,7 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
     return false;
   }
   bufferlist tag_attr;
-  dout(0) << __func__ << " flushing object without tag: " << current_bp_tag << dendl;
+  //dout(0) << __func__ << " flushing object without tag: " << current_bp_tag << dendl;
 
   utime_t now = ceph_clock_now();
   utime_t ob_local_mtime;
