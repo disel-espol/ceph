@@ -1943,45 +1943,6 @@ hobject_t PrimaryLogPG::earliest_backfill() const
   return e;
 }
 
-int PrimaryLogPG::store_object_in_index(ObjectContextRef obc, OpRequestRef& op){
-  
-  string prefix = "_BP_TAG_";
-  map<string, bufferlist> attr_list;
-  string tag_attr_str;
-
-  int attr_r = pgbackend->objects_get_attrs(obc->obs.oi.soid, &attr_list);
-
-  for (auto& [attr_name, attr_value]: attr_list) {
-    if(attr_name.find(prefix) == 0){
-      tag_attr_str = attr_name;
-      dout(0) << "received object:" << obc->obs.oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
-      client_tag_index[tag_attr_str].insert(obc->obs.oi.soid);
-      int cmp = current_bp_tag.compare(tag_attr_str);
-      dout(0) << "tag comparison: " << current_bp_tag << " to: " << tag_attr_str  << " result: " << cmp << dendl;
-      
-      if(cmp != 0){
-        dout(0) << "changed tag from: " << current_bp_tag << " to: " << tag_attr_str << dendl;
-        dout(0) << "PROMOTING" << dendl;
-        //promote_by_tag(tag_attr_str, op);
-        current_bp_tag = tag_attr_str;
-      }
-      break;
-    }else{
-      dout(0) << "xattr skipped: " << attr_name << dendl;
-    }
-  }
-
-  for (auto& [tag, set]: client_tag_index){
-    int i = 0;
-    for (auto& oid : set) {
-      dout(0) << "index[" << i << "]:" << "object:" << oid.to_str() << " with tag:" << tag << dendl;
-      ++i;
-    } 
-  }
-
-  return 0;
-}
-
 int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op){
   string prefix = "_BP_TAG_";
   map<string, bufferlist> attr_list;
@@ -1992,19 +1953,17 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op
   for (auto& [attr_name, attr_value]: attr_list) {
     if(attr_name.find(prefix) == 0){
       tag_attr_str = attr_name;
-      //dout(0) << "received object:" << oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
       client_tag_index[tag_attr_str].insert(oi.soid);
       int cmp = current_bp_tag.compare(tag_attr_str);
-      //dout(0) << "tag comparison: " << current_bp_tag << " to: " << tag_attr_str  << " result: " << cmp << dendl;
       
       //optimize, dont modify the flags every time
       if(cmp == 0){ 
-        //dout(0) << "matches current tag: " << current_bp_tag << " setting as tag pinned " << dendl;
         oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
       } else {
         //this should not be here, but for testing is fine:
         current_bp_tag = tag_attr_str;
         promote_by_tag(current_bp_tag, op);
+        dout(0) << "promoting object with tag: "  << tag_attr_str << dendl;
         //
       }
       break;
@@ -2048,6 +2007,8 @@ int PrimaryLogPG::promote_by_tag(string tag, OpRequestRef& op){
 
     object_locator_t oloc(obc->obs.oi.soid);
     promote_object( obc, oid, oloc, nullptr, &promote_obc);
+    dout(0) << "Promoting tag: " << tag << dendl;
+
   }
   return 0;
 }
@@ -2428,11 +2389,6 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
 			       obc))
     return;
   }
-
-  // if (obc.get()) {
-  //   if(store_object_in_index(obc, op))
-  //     return;
-  // }
 
   if (maybe_handle_cache(op,
 			 write_ordered,
