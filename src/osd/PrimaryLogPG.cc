@@ -1960,10 +1960,10 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op
         oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
       } else {
         //this should not be here, but for testing is fine:
+        current_bp_tag = tag_attr_str;
         promote_by_tag(current_bp_tag, op);
         dout(0) << "promoting object with tag: " << tag_attr_str << dendl;
         //
-        current_bp_tag = tag_attr_str;
       }
       client_tag_index[tag_attr_str].insert(oi.soid);
       break;
