@@ -2407,8 +2407,9 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if(compare_for_tag_change(obc->obs.oi))
-    return;
+  if(obc.get() && obc->obs.exists)
+    if(compare_for_tag_change(obc->obs.oi))
+      return;
 
   if (maybe_handle_cache(op,
 			 write_ordered,
