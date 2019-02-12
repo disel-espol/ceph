@@ -1219,7 +1219,7 @@ protected:
 
   string current_bp_tag;
   int promote_by_tag(string tag);
-  int compare_for_tag_change(object_info_t& oi)
+  int compare_for_tag_change(object_info_t& oi);
   int maybe_set_tag_cache_pinned(object_info_t& oi);
   int maybe_clear_tag_cache_pinned(object_info_t& oi);
 
