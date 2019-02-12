@@ -1943,7 +1943,30 @@ hobject_t PrimaryLogPG::earliest_backfill() const
   return e;
 }
 
-int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op){
+int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
+  string prefix = "_BP_TAG_";
+  map<string, bufferlist> attr_list;
+  string tag_attr_str;
+
+  int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
+
+  for (auto& [attr_name, attr_value]: attr_list) {
+    if(attr_name.find(prefix) == 0){
+      tag_attr_str = attr_name;
+      int cmp = current_bp_tag.compare(tag_attr_str);
+      
+      if(cmp != 0){ 
+        current_bp_tag = tag_attr_str;
+        promote_by_tag(current_bp_tag);
+        dout(0) << "promoting object with tag: " << tag_attr_str << dendl;
+      }
+      break;
+    }
+  }
+  return 0;
+}
+
+int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
   string prefix = "_BP_TAG_";
   map<string, bufferlist> attr_list;
   string tag_attr_str;
@@ -1958,12 +1981,6 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op
       //optimize, dont modify the flags every time
       if(cmp == 0){ 
         oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
-      } else {
-        //this should not be here, but for testing is fine:
-        current_bp_tag = tag_attr_str;
-        promote_by_tag(current_bp_tag, op);
-        dout(0) << "promoting object with tag: " << tag_attr_str << dendl;
-        //
       }
       client_tag_index[tag_attr_str].insert(oi.soid);
       break;
@@ -1997,7 +2014,7 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
   return 0;
 }
 
-int PrimaryLogPG::promote_by_tag(string tag, OpRequestRef& op){
+int PrimaryLogPG::promote_by_tag(string tag){
   auto objects = client_tag_index[tag];
 
   for (auto& oid: objects) {
@@ -2389,6 +2406,9 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
 			       obc))
     return;
   }
+
+  if(compare_for_tag_change(obc->obs.oi))
+    return;
 
   if (maybe_handle_cache(op,
 			 write_ordered,

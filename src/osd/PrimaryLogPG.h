@@ -1218,9 +1218,9 @@ protected:
     );
 
   string current_bp_tag;
-  int store_object_in_index(ObjectContextRef obc, OpRequestRef& op);
-  int promote_by_tag(string tag, OpRequestRef& op);
-  int maybe_set_tag_cache_pinned(object_info_t& oi, OpRequestRef& op);
+  int promote_by_tag(string tag);
+  int compare_for_tag_change(object_info_t& oi)
+  int maybe_set_tag_cache_pinned(object_info_t& oi);
   int maybe_clear_tag_cache_pinned(object_info_t& oi);
 
   int prepare_transaction(OpContext *ctx);
