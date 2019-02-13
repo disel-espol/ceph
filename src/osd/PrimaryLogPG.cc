@@ -2974,9 +2974,11 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
       return cache_result_t::BLOCKED_FULL;
     }
 
+    compare_for_tag_change(obc->obs.oi);
+
+
     if (must_promote || (!hit_set && !op->need_skip_promote())) {
       promote_object(obc, missing_oid, oloc, op, promote_obc);
-      compare_for_tag_change(promote_obc->obs.oi);
       return cache_result_t::BLOCKED_PROMOTE;
     }
 
@@ -2989,7 +2991,6 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
 	              pool.info.min_write_recency_for_promote,
 		      OpRequestRef(),
 		      promote_obc)) {
-      compare_for_tag_change(promote_obc->obs.oi);
 	return cache_result_t::BLOCKED_PROMOTE;
       }
       return cache_result_t::HANDLED_PROXY;
