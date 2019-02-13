@@ -1944,12 +1944,12 @@ hobject_t PrimaryLogPG::earliest_backfill() const
 }
 
 int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
-  dout(0) << "compare_for_tag_change: " << tag_attr_str << dendl;
   string prefix = "_BP_TAG_";
   map<string, bufferlist> attr_list;
   string tag_attr_str;
 
   int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
+  dout(0) << "compare_for_tag_change: " << current_bp_tag << dendl;
 
   for (auto& [attr_name, attr_value]: attr_list) {
     if(attr_name.find(prefix) == 0){
