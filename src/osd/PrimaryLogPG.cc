@@ -2407,10 +2407,6 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
     return;
   }
 
-  if(obc.get() && obc->obs.exists)
-    if(compare_for_tag_change(obc->obs.oi))
-      return;
-
   if (maybe_handle_cache(op,
 			 write_ordered,
 			 obc,
@@ -2975,6 +2971,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
 
     if (must_promote || (!hit_set && !op->need_skip_promote())) {
       promote_object(obc, missing_oid, oloc, op, promote_obc);
+      compare_for_tag_change(obc->obs.oi);
       return cache_result_t::BLOCKED_PROMOTE;
     }
 
