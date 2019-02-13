@@ -2899,6 +2899,9 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   if (pool.info.cache_mode == pg_pool_t::CACHEMODE_NONE)
     return cache_result_t::NOOP;
 
+  compare_for_tag_change(obc->obs.oi);
+
+
   if (op &&
       op->get_req() &&
       op->get_req()->get_type() == CEPH_MSG_OSD_OP &&
@@ -2974,7 +2977,6 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
       return cache_result_t::BLOCKED_FULL;
     }
 
-    compare_for_tag_change(obc->obs.oi);
 
 
     if (must_promote || (!hit_set && !op->need_skip_promote())) {
