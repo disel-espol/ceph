@@ -1952,14 +1952,16 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
   dout(0) << "compare_for_tag_change: " << current_bp_tag << dendl;
 
   for (auto& [attr_name, attr_value]: attr_list) {
+    dout(0) << "comparing xattr: " << attr_name << dendl;
     if(attr_name.find(prefix) == 0){
+      dout(0) << "found!: " << attr_name << dendl;
       tag_attr_str = attr_name;
       int cmp = current_bp_tag.compare(tag_attr_str);
       
       if(cmp != 0){ 
         current_bp_tag = tag_attr_str;
         promote_by_tag(current_bp_tag);
-        dout(0) << "promoting object with tag: " << tag_attr_str << dendl;
+        dout(0) << "promoting objects with tag: " << tag_attr_str << dendl;
       }
       break;
     }
