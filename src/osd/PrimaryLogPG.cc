@@ -1950,6 +1950,8 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
 
   int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
   dout(0) << "compare_for_tag_change: " << current_bp_tag << dendl;
+  dout(0) << "get attrs return val: " << attr_r << dendl;
+  dout(0) << "attt list size: " << attr_r.size() << dendl;
 
   for (auto& [attr_name, attr_value]: attr_list) {
     dout(0) << "comparing xattr: " << attr_name << dendl;
