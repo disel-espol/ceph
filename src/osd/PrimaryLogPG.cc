@@ -1944,6 +1944,7 @@ hobject_t PrimaryLogPG::earliest_backfill() const
 }
 
 int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
+  dout(0) << "compare_for_tag_change: " << tag_attr_str << dendl;
   string prefix = "_BP_TAG_";
   map<string, bufferlist> attr_list;
   string tag_attr_str;
@@ -2984,6 +2985,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
 	              pool.info.min_write_recency_for_promote,
 		      OpRequestRef(),
 		      promote_obc)) {
+      compare_for_tag_change(obc->obs.oi);
 	return cache_result_t::BLOCKED_PROMOTE;
       }
       return cache_result_t::HANDLED_PROXY;
