@@ -9768,11 +9768,12 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     finish_ctx(tctx.get(), pg_log_entry_t::PROMOTE);
 
     simple_opc_submit(std::move(tctx));
-    dout(0) << "FINISHED PROMOTE END: " << dendl;
+    dout(0) << "FINISHED PROMOTE 15: " << dendl;
 
     return;
   }
 
+  dout(0) << "FINISHED PROMOTE FINISH - 6: " << dendl;
   bool whiteout = false;
   if (r == -ENOENT) {
     ceph_assert(soid.snap == CEPH_NOSNAP); // snap case is above
@@ -9780,6 +9781,7 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     whiteout = true;
   }
 
+  dout(0) << "FINISHED PROMOTE FINISH - 5: " << dendl;
   if (r < 0 && !whiteout) {
     derr << __func__ << " unexpected promote error " << cpp_strerror(r) << dendl;
     // pass error to everyone blocked on this object
@@ -9797,6 +9799,7 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     return;
   }
 
+  dout(0) << "FINISHED PROMOTE FINISH - 4: " << dendl;
   osd->promote_finish(results->object_size);
 
   OpContextUPtr tctx =  simple_opc_create(obc);
@@ -9812,6 +9815,7 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
   tctx->extra_reqids = results->reqids;
   tctx->extra_reqid_return_codes = results->reqid_return_codes;
 
+  dout(0) << "FINISHED PROMOTE FINISH - 3: " << dendl;
   if (whiteout) {
     // create a whiteout
     tctx->op_t->create(soid);
@@ -9858,6 +9862,7 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     }
   }
 
+  dout(0) << "FINISHED PROMOTE FINISH - 2: " << dendl;
   if (results->mirror_snapset) {
     ceph_assert(tctx->new_obs.oi.soid.snap == CEPH_NOSNAP);
     tctx->new_snapset.from_snap_set(
@@ -9866,6 +9871,7 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
   }
   dout(20) << __func__ << " new_snapset " << tctx->new_snapset << dendl;
 
+  dout(0) << "FINISHED PROMOTE FINISH - 1: " << dendl;
   // take RWWRITE lock for duration of our local write.  ignore starvation.
   if (!tctx->lock_manager.take_write_lock(
 	obc->obs.oi.soid,
@@ -9883,6 +9889,8 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
   if (agent_state &&
       agent_state->is_idle())
     agent_choose_mode();
+  dout(0) << "FINISHED PROMOTE FINISH: " << dendl;
+
 }
 
 void PrimaryLogPG::finish_promote_manifest(int r, CopyResults *results,
