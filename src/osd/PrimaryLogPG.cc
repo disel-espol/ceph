@@ -1963,7 +1963,6 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
       if(cmp != 0){ 
         current_bp_tag = tag_attr_str;
         promote_by_tag(current_bp_tag);
-        dout(0) << "promoting objects with tag: " << tag_attr_str << dendl;
       }
       break;
     }
@@ -2029,8 +2028,7 @@ int PrimaryLogPG::promote_by_tag(string tag){
 
     object_locator_t oloc(obc->obs.oi.soid);
     promote_object( obc, oid, oloc, nullptr, &promote_obc);
-    dout(0) << "Promoting tag: " << tag << dendl;
-
+    dout(0) << "promoting "<< objects.size() << " objects with tag: " << tag << dendl;
   }
   return 0;
 }
@@ -9665,7 +9663,7 @@ void PrimaryLogPG::finish_copyfrom(CopyFromCallback *cb)
 void PrimaryLogPG::finish_promote(int r, CopyResults *results,
 				  ObjectContextRef obc)
 {
-  dout(0) << "FINISHED PROMOTE: " << dendl;
+  dout(0) << "FINISHED PROMOTE START: " << dendl;
   const hobject_t& soid = obc->obs.oi.soid;
   dout(10) << __func__ << " " << soid << " r=" << r
 	   << " uv" << results->user_version << dendl;
@@ -9744,6 +9742,7 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     tctx->new_snapset.clone_snaps.swap(new_clone_snaps);
 
     // take RWWRITE lock for duration of our local write.  ignore starvation.
+    dout(0) << "FINISHED PROMOTE BEFORE LOCK: " << dendl;
     if (!tctx->lock_manager.take_write_lock(
 	  head,
 	  obc)) {
@@ -9754,6 +9753,8 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     finish_ctx(tctx.get(), pg_log_entry_t::PROMOTE);
 
     simple_opc_submit(std::move(tctx));
+    dout(0) << "FINISHED PROMOTE END: " << dendl;
+
     return;
   }
 
