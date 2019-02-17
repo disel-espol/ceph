@@ -14500,31 +14500,31 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
   // get dirty, full ratios
   double double_dirty_micro = 0;
   double double_full_micro = 0;
-  if (pool.info.target_max_bytes && num_user_objects > 0) {
-    uint64_t avg_size = num_user_bytes / num_user_objects;
-    dirty_micro =
-      num_dirty * avg_size * 1000000 /
-      std::max<uint64_t>(pool.info.target_max_bytes / divisor, 1);
-    full_micro =
-      num_user_objects * avg_size * 1000000 /
-      std::max<uint64_t>(pool.info.target_max_bytes / divisor, 1);
-  }
+  // if (pool.info.target_max_bytes && num_user_objects > 0) {
+  //   uint64_t avg_size = num_user_bytes / num_user_objects;
+  //   double_dirty_micro =
+  //     num_dirty * avg_size * 1000000 /
+  //     std::max<uint64_t>(pool.info.target_max_bytes / divisor, 1);
+  //   double_full_micro =
+  //     num_user_objects * avg_size * 1000000 /
+  //     std::max<uint64_t>(pool.info.target_max_bytes / divisor, 1);
+  // }
   if (pool.info.target_max_objects > 0) {
     double dirty_objects_micro =
       (double)num_dirty * 1000000.0 /
       std::max<double>((double)pool.info.target_max_objects / (double)divisor, 1.0);
-    if (dirty_objects_micro > dirty_micro)
-      (double)dirty_micro = dirty_objects_micro;
+    if (dirty_objects_micro > double_dirty_micro)
+      (double)double_dirty_micro = dirty_objects_micro;
     double full_objects_micro =
       (double)num_user_objects * 1000000.0 /
       std::max<double>((double)pool.info.target_max_objects / (double)divisor, 1.0);
       dout(0) << "DIVISOR: " << divisor << dendl;
       dout(0) << "FULL OBJECTS MICRO: " << full_objects_micro << dendl;
-    if (full_objects_micro > full_micro)
-      full_micro = full_objects_micro;
-      dout(0) << "FULL MICRO: " << full_micro << dendl;
+    if (full_objects_micro > double_full_micro)
+      double_full_micro = full_objects_micro;
+      dout(0) << "FULL MICRO: " << double_full_micro << dendl;
   }
-  dout(20) << __func__ << " dirty " << ((float)dirty_micro / 1000000.0)
+  dout(20) << __func__ << " dirty " << ((float)double_dirty_micro / 1000000.0)
 	   << " full " << ((float)full_micro / 1000000.0)
 	   << dendl;
 
