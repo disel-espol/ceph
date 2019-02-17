@@ -14518,6 +14518,8 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
     uint64_t full_objects_micro =
       num_user_objects * 1000000 /
       std::max<uint64_t>(pool.info.target_max_objects / divisor, 1);
+      dout(0) << "DIVISOR: " << divisor << dendl;
+      dout(0) << "FULL OBJECTS MICRO: " << full_objects_micro << dendl;
     if (full_objects_micro > full_micro)
       full_micro = full_objects_micro;
       dout(0) << "FULL MICRO: " << full_micro << dendl;
