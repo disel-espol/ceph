@@ -14524,8 +14524,8 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
       double_full_micro = full_objects_micro;
       dout(0) << "FULL MICRO: " << double_full_micro << dendl;
   }
-  dout(20) << __func__ << " dirty " << ((float)double_dirty_micro / 1000000.0)
-	   << " full " << ((float)full_micro / 1000000.0)
+  dout(20) << __func__ << " dirty " << ((double)double_dirty_micro / 1000000.0)
+	   << " full " << ((double)double_full_micro / 1000000.0)
 	   << dendl;
 
   uint64_t dirty_micro = (uint64_t)double_dirty_micro + 0.5;
