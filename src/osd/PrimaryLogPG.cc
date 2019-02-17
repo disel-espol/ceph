@@ -9663,7 +9663,7 @@ void PrimaryLogPG::finish_copyfrom(CopyFromCallback *cb)
 void PrimaryLogPG::finish_promote(int r, CopyResults *results,
 				  ObjectContextRef obc)
 {
-  dout(0) << "FINISHED PROMOTE START: " << dendl;
+  dout(0) << "FINISHED PROMOTE 0: " << dendl;
   const hobject_t& soid = obc->obs.oi.soid;
   dout(10) << __func__ << " " << soid << " r=" << r
 	   << " uv" << results->user_version << dendl;
@@ -9671,9 +9671,12 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
   if (r == -ECANCELED) {
     return;
   }
+  dout(0) << "FINISHED PROMOTE 1: " << dendl;
 
   if (r != -ENOENT && soid.is_snap()) {
+    dout(0) << "FINISHED PROMOTE 2: " << dendl;
     if (results->snaps.empty()) {
+      dout(0) << "FINISHED PROMOTE 3: " << dendl;
       // we must have read "snap" content from the head object in
       // the base pool.  use snap_seq to construct what snaps should
       // be for this clone (what is was before we evicted the clean
@@ -9681,14 +9684,18 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
       // the clone eventually happens in the base pool).
       SnapSet& snapset = obc->ssc->snapset;
       vector<snapid_t>::iterator p = snapset.snaps.begin();
-      while (p != snapset.snaps.end() && *p > soid.snap)
-	++p;
+      while (p != snapset.snaps.end() && *p > soid.snap){
+	        ++p;
+        dout(0) << "FINISHED PROMOTE 4: " << dendl;
+      }
       while (p != snapset.snaps.end() && *p > results->snap_seq) {
+        dout(0) << "FINISHED PROMOTE 5: " << dendl;
 	results->snaps.push_back(*p);
 	++p;
       }
     }
 
+    dout(0) << "FINISHED PROMOTE 6: " << dendl;
     dout(20) << __func__ << " snaps " << results->snaps << dendl;
     filter_snapc(results->snaps);
 
@@ -9701,7 +9708,9 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     }
   }
 
+    dout(0) << "FINISHED PROMOTE 7: " << dendl;
   if (r < 0 && results->started_temp_obj) {
+    dout(0) << "FINISHED PROMOTE 8: " << dendl;
     dout(10) << __func__ << " abort; will clean up partial work" << dendl;
     ObjectContextRef tempobc = get_object_context(results->temp_oid, false);
     ceph_assert(tempobc);
@@ -9711,7 +9720,9 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     results->started_temp_obj = false;
   }
 
+  dout(0) << "FINISHED PROMOTE 9: " << dendl;
   if (r == -ENOENT && soid.is_snap()) {
+    dout(0) << "FINISHED PROMOTE 10: " << dendl;
     dout(10) << __func__
 	     << ": enoent while trying to promote clone, " << soid
 	     << " must have been trimmed, removing from snapset"
@@ -9725,24 +9736,28 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     filter_snapc(tctx->new_snapset.snaps);
     vector<snapid_t> new_clones;
     map<snapid_t, vector<snapid_t>> new_clone_snaps;
+    dout(0) << "FINISHED PROMOTE 11: " << dendl;
     for (vector<snapid_t>::iterator i = tctx->new_snapset.clones.begin();
 	 i != tctx->new_snapset.clones.end();
 	 ++i) {
       if (*i != soid.snap) {
-	new_clones.push_back(*i);
-	auto p = tctx->new_snapset.clone_snaps.find(*i);
-	if (p != tctx->new_snapset.clone_snaps.end()) {
-	  new_clone_snaps[*i] = p->second;
-	}
+        dout(0) << "FINISHED PROMOTE 11.5: " << dendl;
+        new_clones.push_back(*i);
+        auto p = tctx->new_snapset.clone_snaps.find(*i);
+        if (p != tctx->new_snapset.clone_snaps.end()) {
+          dout(0) << "FINISHED PROMOTE 12: " << dendl;
+          new_clone_snaps[*i] = p->second;
+        }
       }
     }
+    dout(0) << "FINISHED PROMOTE 13: " << dendl;
     tctx->new_snapset.clones.swap(new_clones);
     tctx->new_snapset.clone_overlap.erase(soid.snap);
     tctx->new_snapset.clone_size.erase(soid.snap);
     tctx->new_snapset.clone_snaps.swap(new_clone_snaps);
 
     // take RWWRITE lock for duration of our local write.  ignore starvation.
-    dout(0) << "FINISHED PROMOTE BEFORE LOCK: " << dendl;
+    dout(0) << "FINISHED PROMOTE 14: " << dendl;
     if (!tctx->lock_manager.take_write_lock(
 	  head,
 	  obc)) {
