@@ -14514,7 +14514,7 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
       (double)num_dirty * 1000000.0 /
       std::max<double>((double)pool.info.target_max_objects / (double)divisor, 1.0);
     if (dirty_objects_micro > double_dirty_micro)
-      (double)double_dirty_micro = dirty_objects_micro;
+      double_dirty_micro = dirty_objects_micro;
     double full_objects_micro =
       (double)num_user_objects * 1000000.0 /
       std::max<double>((double)pool.info.target_max_objects / (double)divisor, 1.0);
