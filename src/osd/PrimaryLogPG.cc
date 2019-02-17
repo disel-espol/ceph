@@ -9663,7 +9663,6 @@ void PrimaryLogPG::finish_copyfrom(CopyFromCallback *cb)
 void PrimaryLogPG::finish_promote(int r, CopyResults *results,
 				  ObjectContextRef obc)
 {
-  dout(0) << "FINISHED PROMOTE 0: " << dendl;
   const hobject_t& soid = obc->obs.oi.soid;
   dout(10) << __func__ << " " << soid << " r=" << r
 	   << " uv" << results->user_version << dendl;
@@ -9671,12 +9670,9 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
   if (r == -ECANCELED) {
     return;
   }
-  dout(0) << "FINISHED PROMOTE 1: " << dendl;
 
   if (r != -ENOENT && soid.is_snap()) {
-    dout(0) << "FINISHED PROMOTE 2: " << dendl;
     if (results->snaps.empty()) {
-      dout(0) << "FINISHED PROMOTE 3: " << dendl;
       // we must have read "snap" content from the head object in
       // the base pool.  use snap_seq to construct what snaps should
       // be for this clone (what is was before we evicted the clean
@@ -9684,18 +9680,14 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
       // the clone eventually happens in the base pool).
       SnapSet& snapset = obc->ssc->snapset;
       vector<snapid_t>::iterator p = snapset.snaps.begin();
-      while (p != snapset.snaps.end() && *p > soid.snap){
+      while (p != snapset.snaps.end() && *p > soid.snap)
 	        ++p;
-        dout(0) << "FINISHED PROMOTE 4: " << dendl;
-      }
       while (p != snapset.snaps.end() && *p > results->snap_seq) {
-        dout(0) << "FINISHED PROMOTE 5: " << dendl;
 	results->snaps.push_back(*p);
 	++p;
       }
     }
 
-    dout(0) << "FINISHED PROMOTE 6: " << dendl;
     dout(20) << __func__ << " snaps " << results->snaps << dendl;
     filter_snapc(results->snaps);
 
@@ -9708,9 +9700,7 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     }
   }
 
-    dout(0) << "FINISHED PROMOTE 7: " << dendl;
   if (r < 0 && results->started_temp_obj) {
-    dout(0) << "FINISHED PROMOTE 8: " << dendl;
     dout(10) << __func__ << " abort; will clean up partial work" << dendl;
     ObjectContextRef tempobc = get_object_context(results->temp_oid, false);
     ceph_assert(tempobc);
@@ -9720,9 +9710,7 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     results->started_temp_obj = false;
   }
 
-  dout(0) << "FINISHED PROMOTE 9: " << dendl;
   if (r == -ENOENT && soid.is_snap()) {
-    dout(0) << "FINISHED PROMOTE 10: " << dendl;
     dout(10) << __func__
 	     << ": enoent while trying to promote clone, " << soid
 	     << " must have been trimmed, removing from snapset"
@@ -9736,28 +9724,23 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     filter_snapc(tctx->new_snapset.snaps);
     vector<snapid_t> new_clones;
     map<snapid_t, vector<snapid_t>> new_clone_snaps;
-    dout(0) << "FINISHED PROMOTE 11: " << dendl;
     for (vector<snapid_t>::iterator i = tctx->new_snapset.clones.begin();
 	 i != tctx->new_snapset.clones.end();
 	 ++i) {
       if (*i != soid.snap) {
-        dout(0) << "FINISHED PROMOTE 11.5: " << dendl;
         new_clones.push_back(*i);
         auto p = tctx->new_snapset.clone_snaps.find(*i);
         if (p != tctx->new_snapset.clone_snaps.end()) {
-          dout(0) << "FINISHED PROMOTE 12: " << dendl;
           new_clone_snaps[*i] = p->second;
         }
       }
     }
-    dout(0) << "FINISHED PROMOTE 13: " << dendl;
     tctx->new_snapset.clones.swap(new_clones);
     tctx->new_snapset.clone_overlap.erase(soid.snap);
     tctx->new_snapset.clone_size.erase(soid.snap);
     tctx->new_snapset.clone_snaps.swap(new_clone_snaps);
 
     // take RWWRITE lock for duration of our local write.  ignore starvation.
-    dout(0) << "FINISHED PROMOTE 14: " << dendl;
     if (!tctx->lock_manager.take_write_lock(
 	  head,
 	  obc)) {
@@ -9768,12 +9751,9 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     finish_ctx(tctx.get(), pg_log_entry_t::PROMOTE);
 
     simple_opc_submit(std::move(tctx));
-    dout(0) << "FINISHED PROMOTE 15: " << dendl;
-
     return;
   }
 
-  dout(0) << "FINISHED PROMOTE FINISH - 6: " << dendl;
   bool whiteout = false;
   if (r == -ENOENT) {
     ceph_assert(soid.snap == CEPH_NOSNAP); // snap case is above
@@ -9781,7 +9761,6 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     whiteout = true;
   }
 
-  dout(0) << "FINISHED PROMOTE FINISH - 5: " << dendl;
   if (r < 0 && !whiteout) {
     derr << __func__ << " unexpected promote error " << cpp_strerror(r) << dendl;
     // pass error to everyone blocked on this object
@@ -9799,7 +9778,6 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     return;
   }
 
-  dout(0) << "FINISHED PROMOTE FINISH - 4: " << dendl;
   osd->promote_finish(results->object_size);
 
   OpContextUPtr tctx =  simple_opc_create(obc);
@@ -9815,7 +9793,6 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
   tctx->extra_reqids = results->reqids;
   tctx->extra_reqid_return_codes = results->reqid_return_codes;
 
-  dout(0) << "FINISHED PROMOTE FINISH - 3: " << dendl;
   if (whiteout) {
     // create a whiteout
     tctx->op_t->create(soid);
@@ -9862,7 +9839,6 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
     }
   }
 
-  dout(0) << "FINISHED PROMOTE FINISH - 2: " << dendl;
   if (results->mirror_snapset) {
     ceph_assert(tctx->new_obs.oi.soid.snap == CEPH_NOSNAP);
     tctx->new_snapset.from_snap_set(
@@ -9871,7 +9847,6 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
   }
   dout(20) << __func__ << " new_snapset " << tctx->new_snapset << dendl;
 
-  dout(0) << "FINISHED PROMOTE FINISH - 1: " << dendl;
   // take RWWRITE lock for duration of our local write.  ignore starvation.
   if (!tctx->lock_manager.take_write_lock(
 	obc->obs.oi.soid,
@@ -9889,8 +9864,6 @@ void PrimaryLogPG::finish_promote(int r, CopyResults *results,
   if (agent_state &&
       agent_state->is_idle())
     agent_choose_mode();
-  dout(0) << "FINISHED PROMOTE FINISH: " << dendl;
-
 }
 
 void PrimaryLogPG::finish_promote_manifest(int r, CopyResults *results,
@@ -14547,6 +14520,7 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
       std::max<uint64_t>(pool.info.target_max_objects / divisor, 1);
     if (full_objects_micro > full_micro)
       full_micro = full_objects_micro;
+      dout(0) << "FULL MICRO: " << full_micro << dendl;
   }
   dout(20) << __func__ << " dirty " << ((float)dirty_micro / 1000000.0)
 	   << " full " << ((float)full_micro / 1000000.0)
@@ -14580,6 +14554,7 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
 
   if (full_micro > 1000000) {
     // evict anything clean
+    dout(0) << "SET EVICT MODE FULL" << dendl;
     evict_mode = TierAgentState::EVICT_MODE_FULL;
     evict_effort = 1000000;
   } else if (full_micro > evict_target) {
