@@ -6626,7 +6626,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
       break;
       
     case CEPH_OSD_OP_WRITEFULL:
-    dout(0) << "DO_OSD_OPS() INSIDE CASE WRITEFULL" << dendl
+    dout(0) << "DO_OSD_OPS() INSIDE CASE WRITEFULL" << dendl;
       ++ctx->num_write;
       { // write full object
 	tracepoint(osd, do_osd_op_pre_writefull, soid.oid.name.c_str(), soid.snap.val, oi.size, 0, op.extent.length);
