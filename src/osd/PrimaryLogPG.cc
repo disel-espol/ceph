@@ -5832,7 +5832,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 
   PGTransaction* t = ctx->op_t.get();
 
-  dout(10) << "do_osd_op " << soid << " " << ops << dendl;
+  dout(10) << "DO_OSD_OP: " << soid << " " << ops << dendl;
 
   ctx->current_osd_subop_num = 0;
   for (auto p = ops.begin(); p != ops.end(); ++p, ctx->current_osd_subop_num++, ctx->processed_subop_count++) {
@@ -6626,6 +6626,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
       break;
       
     case CEPH_OSD_OP_WRITEFULL:
+    dout(0) << "DO_OSD_OPS() INSIDE CASE WRITEFULL" << dendl
       ++ctx->num_write;
       { // write full object
 	tracepoint(osd, do_osd_op_pre_writefull, soid.oid.name.c_str(), soid.snap.val, oi.size, 0, op.extent.length);
@@ -9664,6 +9665,7 @@ void PrimaryLogPG::finish_copyfrom(CopyFromCallback *cb)
 void PrimaryLogPG::finish_promote(int r, CopyResults *results,
 				  ObjectContextRef obc)
 {
+  dout(0) << "FINISHED PROMOTE: " << dendl;
   const hobject_t& soid = obc->obs.oi.soid;
   dout(10) << __func__ << " " << soid << " r=" << r
 	   << " uv" << results->user_version << dendl;
