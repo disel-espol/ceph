@@ -2025,10 +2025,16 @@ int PrimaryLogPG::promote_by_tag(string tag){
     ObjectContextRef obc;
     find_object_context(oid, &obc, true);
 
+    ObjectContextRef promote_obc;
+
     object_locator_t oloc(obc->obs.oi.soid);
-    bool in_hit_set = obc->obs.oi.soid != hobject_t() && hit_set->contains(oid);
-    maybe_promote(obc, oid, oloc, in_hit_set, pool.info.min_write_recency_for_promote, nullptr);
-    dout(0) << "promoting "<< objects.size() << " objects with tag: " << tag << dendl;
+    dout(0) << "1 promoting "<< objects.size() << " objects with tag: " << tag << dendl;
+    bool in_hit_set = obc->obs.oi.soid != hobject_t();
+    dout(0) << "1.5 promoting "<< objects.size() << " objects with tag: " << tag << dendl;
+    in_hit_set = in_hit_set && hit_set->contains(oid);
+    dout(0) << "2 promoting "<< objects.size() << " objects with tag: " << tag << dendl;
+    maybe_promote(obc, oid, oloc, in_hit_set, pool.info.min_write_recency_for_promote, nullptr, &promote_obc);
+    dout(0) << "3 promoting "<< objects.size() << " objects with tag: " << tag << dendl;
   }
   return 0;
 }
