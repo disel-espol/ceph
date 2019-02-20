@@ -2024,10 +2024,9 @@ int PrimaryLogPG::promote_by_tag(string tag){
   for (auto& oid: objects) {
     ObjectContextRef obc;
     find_object_context(oid, &obc, true);
-    ObjectContextRef promote_obc;
 
     object_locator_t oloc(obc->obs.oi.soid);
-    promote_object( obc, oid, oloc, nullptr, &promote_obc);
+    maybe_promote(obc, oid, oloc, hit_set->contains(oid), pool.info.min_write_recency_for_promote, nullptr);
     dout(0) << "promoting "<< objects.size() << " objects with tag: " << tag << dendl;
   }
   return 0;
@@ -4207,6 +4206,7 @@ void PrimaryLogPG::execute_ctx(OpContext *ctx)
   issue_repop(repop, ctx);
   eval_repop(repop);
   repop->put();
+  dout(0) << "PROMOTED OBJECT" << dendl;
 }
 
 void PrimaryLogPG::close_op_ctx(OpContext *ctx) {
