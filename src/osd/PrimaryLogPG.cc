@@ -2026,7 +2026,8 @@ int PrimaryLogPG::promote_by_tag(string tag){
     find_object_context(oid, &obc, true);
 
     object_locator_t oloc(obc->obs.oi.soid);
-    maybe_promote(obc, oid, oloc, hit_set->contains(oid), pool.info.min_write_recency_for_promote, nullptr);
+    bool in_hit_set = obc->obs.oi.soid != hobject_t() && hit_set->contains(oid);
+    maybe_promote(obc, oid, oloc, in_hit_set, pool.info.min_write_recency_for_promote, nullptr);
     dout(0) << "promoting "<< objects.size() << " objects with tag: " << tag << dendl;
   }
   return 0;
