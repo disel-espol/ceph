@@ -1960,10 +1960,12 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
       tag_attr_str = attr_name;
       int cmp = current_bp_tag.compare(tag_attr_str);
       
+      dout(0) << "before: " << info.stats.stats.sum.num_objects << dendl;
       if(cmp != 0){ 
         current_bp_tag = tag_attr_str;
         promote_by_tag(current_bp_tag);
       }
+      dout(0) << "after: " << info.stats.stats.sum.num_objects << dendl;
       break;
     }
   }
@@ -14231,13 +14233,13 @@ void PrimaryLogPG::agent_load_hit_sets()
 
 bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
 {
+  maybe_clear_tag_cache_pinned(obc->obs.oi);
+
   if (!obc->obs.oi.is_dirty()) {
     dout(20) << __func__ << " skip (clean) " << obc->obs.oi << dendl;
     osd->logger->inc(l_osd_agent_skip);
     return false;
   }
-
-  maybe_clear_tag_cache_pinned(obc->obs.oi);
 
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
@@ -14300,6 +14302,8 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
 bool PrimaryLogPG::agent_maybe_evict(ObjectContextRef& obc, bool after_flush)
 {
   const hobject_t& soid = obc->obs.oi.soid;
+  maybe_clear_tag_cache_pinned(obc->obs.oi);
+
   if (!after_flush && obc->obs.oi.is_dirty()) {
     dout(20) << __func__ << " skip (dirty) " << obc->obs.oi << dendl;
     return false;
@@ -14312,7 +14316,6 @@ bool PrimaryLogPG::agent_maybe_evict(ObjectContextRef& obc, bool after_flush)
     dout(20) << __func__ << " skip (blocked) " << obc->obs.oi << dendl;
     return false;
   }
-  maybe_clear_tag_cache_pinned(obc->obs.oi);
 
   if (obc->obs.oi.is_cache_pinned()) {
     dout(20) << __func__ << " skip (cache_pinned) " << obc->obs.oi << dendl;
