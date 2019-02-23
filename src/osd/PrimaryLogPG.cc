@@ -2908,7 +2908,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   if (pool.info.cache_mode == pg_pool_t::CACHEMODE_NONE)
     return cache_result_t::NOOP;
 
-  compare_for_tag_change(obc->obs.oi);
+  //compare_for_tag_change(obc->obs.oi);
 
 
   if (op &&
