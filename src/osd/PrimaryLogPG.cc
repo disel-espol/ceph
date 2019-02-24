@@ -1949,23 +1949,16 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
   string tag_attr_str;
 
   int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
-  dout(0) << "compare_for_tag_change: " << current_bp_tag << dendl;
-  dout(0) << "get attrs return val: " << attr_r << dendl;
-  dout(0) << "attt list size: " << attr_list.size() << dendl;
 
   for (auto& [attr_name, attr_value]: attr_list) {
-    dout(0) << "comparing xattr: " << attr_name << dendl;
     if(attr_name.find(prefix) == 0){
-      dout(0) << "found!: " << attr_name << dendl;
       tag_attr_str = attr_name;
       int cmp = current_bp_tag.compare(tag_attr_str);
       
-      dout(0) << "before: " << info.stats.stats.sum.num_objects << dendl;
       if(cmp != 0){ 
         current_bp_tag = tag_attr_str;
         promote_by_tag(current_bp_tag);
       }
-      dout(0) << "after: " << info.stats.stats.sum.num_objects << dendl;
       break;
     }
   }
@@ -1977,21 +1970,18 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
   map<string, bufferlist> attr_list;
   string tag_attr_str;
 
-  dout(0) << __func__ << " start: current tag: " << current_bp_tag << dendl;
 
 
   int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
 
   for (auto& [attr_name, attr_value]: attr_list) {
     if(attr_name.find(prefix) == 0){
-      dout(0) << __func__ << "found prefix, object tag is: " << attr_name << dendl;
 
       tag_attr_str = attr_name;
       int cmp = current_bp_tag.compare(tag_attr_str);
       
       //optimize, dont modify the flags every time
       if(cmp == 0){ 
-        dout(0) << __func__ << " current tag match: " << current_bp_tag << " setting as tag pinned " << dendl;
         oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
       }
       client_tag_index[tag_attr_str].insert(oi.soid);
@@ -2006,20 +1996,16 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
   map<string, bufferlist> attr_list;
   string tag_attr_str;
 
-  dout(0) << __func__ << " start: current tag: " << current_bp_tag << dendl;
 
   int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
 
   for (auto& [attr_name, attr_value]: attr_list) {
     if(attr_name.find(prefix) == 0){
       tag_attr_str = attr_name;
-      //dout(0) << "received object:" << oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
       int cmp = current_bp_tag.compare(tag_attr_str);
-      dout(0) << __func__ << "found prefix, object tag is: " << attr_name << dendl;
       
       //optimize, dont modify the flags every time
       if(cmp != 0){ 
-        dout(0) << __func__ << " does no match current tag: " << current_bp_tag << " setting as tag unpinned " << dendl;
         oi.clear_flag(object_info_t::FLAG_TAG_CACHE_PIN);
       } 
       break;
@@ -2038,16 +2024,12 @@ int PrimaryLogPG::promote_by_tag(string tag){
     ObjectContextRef promote_obc;
 
     object_locator_t oloc(obc->obs.oi.soid);
-    dout(0) << "1 promoting "<< objects.size() << " objects with tag: " << tag << dendl;
     bool in_hit_set = false;
     if(hit_set){
       in_hit_set = obc->obs.oi.soid != hobject_t();
-      dout(0) << "1.5 promoting "<< objects.size() << " objects with tag: " << tag << dendl;
       in_hit_set = in_hit_set && hit_set->contains(oid);
     }
-    dout(0) << "2 promoting "<< objects.size() << " objects with tag: " << tag << dendl;
     maybe_promote(obc, oid, oloc, in_hit_set, pool.info.min_write_recency_for_promote, nullptr, &promote_obc);
-    dout(0) << "3 promoting "<< objects.size() << " objects with tag: " << tag << dendl;
   }
   return 0;
 }
