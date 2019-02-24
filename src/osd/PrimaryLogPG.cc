@@ -14577,8 +14577,8 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
 
   if (full_micro > 1000000) {
     // evict anything clean
-    dout(0) << "SET EVICT MODE FULL" << dendl;
-    evict_mode = TierAgentState::EVICT_MODE_FULL;
+    dout(0) << "SET EVICT MODE FULL HACK" << dendl;
+    evict_mode = TierAgentState::EVICT_MODE_SOME;
     evict_effort = 1000000;
   } else if (full_micro > evict_target) {
     // set effort in [0..1] range based on where we are between
