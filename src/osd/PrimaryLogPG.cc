@@ -1963,7 +1963,7 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
       dout(0) << "before: " << info.stats.stats.sum.num_objects << dendl;
       if(cmp != 0){ 
         current_bp_tag = tag_attr_str;
-        promote_by_tag(current_bp_tag);
+        //promote_by_tag(current_bp_tag);
       }
       dout(0) << "after: " << info.stats.stats.sum.num_objects << dendl;
       break;
@@ -1984,7 +1984,7 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
 
   for (auto& [attr_name, attr_value]: attr_list) {
     if(attr_name.find(prefix) == 0){
-      dout(0) << __func__ << "found prefix, object tag is: " << current_bp_tag << dendl;
+      dout(0) << __func__ << "found prefix, object tag is: " << attr_name << dendl;
 
       tag_attr_str = attr_name;
       int cmp = current_bp_tag.compare(tag_attr_str);
@@ -2015,7 +2015,7 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
       tag_attr_str = attr_name;
       //dout(0) << "received object:" << oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
       int cmp = current_bp_tag.compare(tag_attr_str);
-      dout(0) << __func__ << "found prefix, object tag is: " << current_bp_tag << dendl;
+      dout(0) << __func__ << "found prefix, object tag is: " << attr_name << dendl;
       
       //optimize, dont modify the flags every time
       if(cmp != 0){ 
@@ -2916,7 +2916,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   if (pool.info.cache_mode == pg_pool_t::CACHEMODE_NONE)
     return cache_result_t::NOOP;
 
-  //compare_for_tag_change(obc->obs.oi);
+  compare_for_tag_change(obc->obs.oi);
 
 
   if (op &&
