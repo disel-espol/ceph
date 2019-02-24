@@ -1963,7 +1963,7 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
       dout(0) << "before: " << info.stats.stats.sum.num_objects << dendl;
       if(cmp != 0){ 
         current_bp_tag = tag_attr_str;
-        //promote_by_tag(current_bp_tag);
+        promote_by_tag(current_bp_tag);
       }
       dout(0) << "after: " << info.stats.stats.sum.num_objects << dendl;
       break;
