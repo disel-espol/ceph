@@ -4208,7 +4208,6 @@ void PrimaryLogPG::execute_ctx(OpContext *ctx)
   issue_repop(repop, ctx);
   eval_repop(repop);
   repop->put();
-  dout(0) << "PROMOTED OBJECT" << dendl;
 }
 
 void PrimaryLogPG::close_op_ctx(OpContext *ctx) {
@@ -6626,7 +6625,6 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
       break;
       
     case CEPH_OSD_OP_WRITEFULL:
-    dout(0) << "DO_OSD_OPS() INSIDE CASE WRITEFULL" << dendl;
       ++ctx->num_write;
       { // write full object
 	tracepoint(osd, do_osd_op_pre_writefull, soid.oid.name.c_str(), soid.snap.val, oi.size, 0, op.extent.length);
@@ -14521,11 +14519,8 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
     uint64_t full_objects_micro =
       num_user_objects * 1000000.0 /
       std::max<uint64_t>(pool.info.target_max_objects / divisor, 1);
-      dout(0) << "DIVISOR: " << divisor << dendl;
-      dout(0) << "FULL OBJECTS MICRO: " << full_objects_micro << dendl;
     if (full_objects_micro > full_micro)
       full_micro = full_objects_micro;
-      dout(0) << "FULL MICRO: " << full_micro << dendl;
   }
   dout(20) << __func__ << " dirty " << ((float)dirty_micro / 1000000)
 	   << " full " << ((float)full_micro / 1000000)
@@ -14559,7 +14554,6 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
 
   if (full_micro > 1000000) {
     // evict anything clean
-    dout(0) << "SET EVICT MODE FULL HACK" << dendl;
     evict_mode = TierAgentState::EVICT_MODE_SOME;
     evict_effort = 1000000;
   } else if (full_micro > evict_target) {
