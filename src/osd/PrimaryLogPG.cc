@@ -1977,15 +1977,21 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
   map<string, bufferlist> attr_list;
   string tag_attr_str;
 
+  dout(0) << __func__ << " start: current tag: " << current_bp_tag << dendl;
+
+
   int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
 
   for (auto& [attr_name, attr_value]: attr_list) {
     if(attr_name.find(prefix) == 0){
+      dout(0) << __func__ << "found prefix, object tag is: " << current_bp_tag << dendl;
+
       tag_attr_str = attr_name;
       int cmp = current_bp_tag.compare(tag_attr_str);
       
       //optimize, dont modify the flags every time
       if(cmp == 0){ 
+        dout(0) << __func__ << " current tag match: " << current_bp_tag << " setting as tag pinned " << dendl;
         oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
       }
       client_tag_index[tag_attr_str].insert(oi.soid);
@@ -2000,6 +2006,8 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
   map<string, bufferlist> attr_list;
   string tag_attr_str;
 
+  dout(0) << __func__ << " start: current tag: " << current_bp_tag << dendl;
+
   int attr_r = pgbackend->objects_get_attrs(oi.soid, &attr_list);
 
   for (auto& [attr_name, attr_value]: attr_list) {
@@ -2007,11 +2015,11 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
       tag_attr_str = attr_name;
       //dout(0) << "received object:" << oi.soid.to_str() << " with tag:" << tag_attr_str << dendl;
       int cmp = current_bp_tag.compare(tag_attr_str);
-      //dout(0) << "tag comparison: " << current_bp_tag << " to: " << tag_attr_str  << " result: " << cmp << dendl;
+      dout(0) << __func__ << "found prefix, object tag is: " << current_bp_tag << dendl;
       
       //optimize, dont modify the flags every time
       if(cmp != 0){ 
-        //dout(0) << "does no match current tag: " << current_bp_tag << " setting as tag unpinned " << dendl;
+        dout(0) << __func__ << " does no match current tag: " << current_bp_tag << " setting as tag unpinned " << dendl;
         oi.clear_flag(object_info_t::FLAG_TAG_CACHE_PIN);
       } 
       break;
