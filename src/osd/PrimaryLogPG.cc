@@ -1983,6 +1983,7 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
       //optimize, dont modify the flags every time
       if(cmp == 0){ 
         oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
+        pinned_object_count++;
       }
       client_tag_index[tag_attr_str].insert(oi.soid);
       break;
@@ -2007,6 +2008,7 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
       //optimize, dont modify the flags every time
       if(cmp != 0){ 
         oi.clear_flag(object_info_t::FLAG_TAG_CACHE_PIN);
+        pinned_object_count--;
       } 
       break;
     }
@@ -14461,6 +14463,7 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
     unflushable += info.stats.stats.sum.num_objects_omap;
 
   uint64_t num_user_objects = info.stats.stats.sum.num_objects;
+  dout(0) << info.stats.stats.sum.num_objects <
   if (num_user_objects > unflushable)
     num_user_objects -= unflushable;
   else
@@ -14496,11 +14499,14 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
 	   << " num_overhead_bytes: " << num_overhead_bytes
 	   << " pool.info.target_max_bytes: " << pool.info.target_max_bytes
 	   << " pool.info.target_max_objects: " << pool.info.target_max_objects
+	   << " tagged objects: " << pinned_object_count
 	   << dendl;
 
   // get dirty, full ratios
   uint64_t dirty_micro = 0;
   uint64_t full_micro = 0;
+
+  num_user_objects -= pinned_object_count;
   if (pool.info.target_max_bytes && num_user_objects > 0) {
     uint64_t avg_size = num_user_bytes / num_user_objects;
     dirty_micro =

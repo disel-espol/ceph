@@ -1217,6 +1217,7 @@ protected:
     ObjectContextRef *promote_obc = nullptr ///< [optional] new obc for object
     );
 
+  int pinned_object_count = 0;
   string current_bp_tag;
   int promote_by_tag(string tag);
   int compare_for_tag_change(object_info_t& oi);
