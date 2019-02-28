@@ -14463,7 +14463,6 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
     unflushable += info.stats.stats.sum.num_objects_omap;
 
   uint64_t num_user_objects = info.stats.stats.sum.num_objects;
-  dout(0) << info.stats.stats.sum.num_objects <
   if (num_user_objects > unflushable)
     num_user_objects -= unflushable;
   else
@@ -14507,6 +14506,7 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
   uint64_t full_micro = 0;
 
   num_user_objects -= pinned_object_count;
+
   if (pool.info.target_max_bytes && num_user_objects > 0) {
     uint64_t avg_size = num_user_bytes / num_user_objects;
     dirty_micro =
