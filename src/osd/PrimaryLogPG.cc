@@ -14505,7 +14505,10 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
   uint64_t dirty_micro = 0;
   uint64_t full_micro = 0;
 
+  dout(0) << "num_user_objects: " << num_user_objects << dendl
+  dout(0) << "pinned_object_count: " << pinned_object_count << dendl
   num_user_objects -= pinned_object_count;
+
 
   if (pool.info.target_max_bytes && num_user_objects > 0) {
     uint64_t avg_size = num_user_bytes / num_user_objects;
