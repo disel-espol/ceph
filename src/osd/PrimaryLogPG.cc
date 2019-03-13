@@ -6659,7 +6659,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 	  obs.oi.clear_data_digest();
 	}
 
-  maybe_set_tag_cache_pinned(obs.oi);
+  //maybe_set_tag_cache_pinned(obs.oi);
 
 	write_update_size_and_usage(ctx->delta_stats, oi, ctx->modified_ranges,
 	    0, op.extent.length, true);
@@ -14223,7 +14223,7 @@ void PrimaryLogPG::agent_load_hit_sets()
 
 bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
 {
-  maybe_clear_tag_cache_pinned(obc->obs.oi);
+  //maybe_clear_tag_cache_pinned(obc->obs.oi);
 
   if (!obc->obs.oi.is_dirty()) {
     dout(20) << __func__ << " skip (clean) " << obc->obs.oi << dendl;
@@ -14292,7 +14292,7 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
 bool PrimaryLogPG::agent_maybe_evict(ObjectContextRef& obc, bool after_flush)
 {
   const hobject_t& soid = obc->obs.oi.soid;
-  maybe_clear_tag_cache_pinned(obc->obs.oi);
+  //maybe_clear_tag_cache_pinned(obc->obs.oi);
 
   if (!after_flush && obc->obs.oi.is_dirty()) {
     dout(20) << __func__ << " skip (dirty) " << obc->obs.oi << dendl;
@@ -14563,7 +14563,7 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
 
   if (full_micro > 1000000) {
     // evict anything clean
-    evict_mode = TierAgentState::EVICT_MODE_SOME;
+    evict_mode = TierAgentState::EVICT_MODE_FULL;
     evict_effort = 1000000;
   } else if (full_micro > evict_target) {
     // set effort in [0..1] range based on where we are between
