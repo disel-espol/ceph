@@ -1957,7 +1957,7 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
       
       if(cmp != 0){ 
         current_bp_tag = tag_attr_str;
-        //promote_by_tag(current_bp_tag);
+        promote_by_tag(current_bp_tag);
       }
       break;
     }
@@ -1983,7 +1983,7 @@ int PrimaryLogPG::maybe_set_tag_cache_pinned(object_info_t& oi){
       //optimize, dont modify the flags every time
       if(cmp == 0){ 
         oi.set_flag(object_info_t::FLAG_TAG_CACHE_PIN);
-        //pinned_object_count++;
+        pinned_object_count++;
       }
       client_tag_index[tag_attr_str].insert(oi.soid);
       break;
@@ -2008,7 +2008,7 @@ int PrimaryLogPG::maybe_clear_tag_cache_pinned(object_info_t& oi){
       //optimize, dont modify the flags every time
       if(cmp != 0){ 
         oi.clear_flag(object_info_t::FLAG_TAG_CACHE_PIN);
-        //pinned_object_count--;
+        pinned_object_count--;
       } 
       break;
     }
@@ -14507,7 +14507,7 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
 
   //dout(0) << "num_user_objects: " << num_user_objects << dendl;
   //dout(0) << "pinned_object_count: " << pinned_object_count << dendl;
-  //num_user_objects -= pinned_object_count;
+  num_user_objects -= pinned_object_count;
 
 
   if (pool.info.target_max_bytes && num_user_objects > 0) {
@@ -14563,7 +14563,7 @@ bool PrimaryLogPG::agent_choose_mode(bool restart, OpRequestRef op)
 
   if (full_micro > 1000000) {
     // evict anything clean
-    evict_mode = TierAgentState::EVICT_MODE_FULL;
+    evict_mode = TierAgentState::EVICT_MODE_SOME;
     evict_effort = 1000000;
   } else if (full_micro > evict_target) {
     // set effort in [0..1] range based on where we are between
