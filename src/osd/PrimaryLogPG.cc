@@ -2900,7 +2900,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   if (pool.info.cache_mode == pg_pool_t::CACHEMODE_NONE)
     return cache_result_t::NOOP;
 
-  compare_for_tag_change(obc->obs.oi);
+  //compare_for_tag_change(obc->obs.oi);
 
 
   if (op &&
@@ -6659,7 +6659,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 	  obs.oi.clear_data_digest();
 	}
 
-  //maybe_set_tag_cache_pinned(obs.oi);
+  maybe_set_tag_cache_pinned(obs.oi);
 
 	write_update_size_and_usage(ctx->delta_stats, oi, ctx->modified_ranges,
 	    0, op.extent.length, true);
@@ -14223,7 +14223,7 @@ void PrimaryLogPG::agent_load_hit_sets()
 
 bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
 {
-  //maybe_clear_tag_cache_pinned(obc->obs.oi);
+  maybe_clear_tag_cache_pinned(obc->obs.oi);
 
   if (!obc->obs.oi.is_dirty()) {
     dout(20) << __func__ << " skip (clean) " << obc->obs.oi << dendl;
@@ -14292,7 +14292,7 @@ bool PrimaryLogPG::agent_maybe_flush(ObjectContextRef& obc)
 bool PrimaryLogPG::agent_maybe_evict(ObjectContextRef& obc, bool after_flush)
 {
   const hobject_t& soid = obc->obs.oi.soid;
-  //maybe_clear_tag_cache_pinned(obc->obs.oi);
+  maybe_clear_tag_cache_pinned(obc->obs.oi);
 
   if (!after_flush && obc->obs.oi.is_dirty()) {
     dout(20) << __func__ << " skip (dirty) " << obc->obs.oi << dendl;
