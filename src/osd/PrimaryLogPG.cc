@@ -1957,7 +1957,7 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
       
       if(cmp != 0){ 
         current_bp_tag = tag_attr_str;
-        promote_by_tag(current_bp_tag);
+        //promote_by_tag(current_bp_tag);
       }
       break;
     }
@@ -2900,7 +2900,7 @@ PrimaryLogPG::cache_result_t PrimaryLogPG::maybe_handle_cache_detail(
   if (pool.info.cache_mode == pg_pool_t::CACHEMODE_NONE)
     return cache_result_t::NOOP;
 
-  //compare_for_tag_change(obc->obs.oi);
+  compare_for_tag_change(obc->obs.oi);
 
 
   if (op &&
