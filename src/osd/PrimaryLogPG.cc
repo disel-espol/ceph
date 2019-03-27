@@ -1956,7 +1956,7 @@ int PrimaryLogPG::compare_for_tag_change(object_info_t& oi){
       
       if(cmp != 0){ 
         current_bp_tag = tag_attr_str;
-        promote_by_tag(current_bp_tag);
+        //promote_by_tag(current_bp_tag);
       }
       break;
     }
