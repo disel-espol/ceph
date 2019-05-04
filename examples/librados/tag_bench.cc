@@ -12,6 +12,7 @@
 
 // install the librados-dev package to get this
 #include <rados/librados.hpp>
+#include <boost/program_options.hpp>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -21,9 +22,11 @@
 #include <hdr_histogram.h>
 #include <chrono>
 #include <atomic>
+#include <vector>
 
 std::atomic<int> read_ps(0);
 std::atomic<int> write_ps(0);
+std::atomic<int> is_done(0);
 
 struct conf_t {
   librados::IoCtx& io_ctx;
@@ -34,6 +37,8 @@ struct conf_t {
   double std_dev;
   double tag_dev;
   int64_t op_count;
+  int64_t round_count;
+  int64_t tag_count;
   struct hdr_histogram* read_histogram;
   struct hdr_histogram* write_histogram;
   bool exit_reporter;
@@ -51,18 +56,60 @@ static inline uint64_t getus()
   return __getns(CLOCK_MONOTONIC) / 1000;
 }
 
+class rand_data_gen {
+ public:
+  rand_data_gen(size_t buf_size, size_t samp_size) :
+    buf_size_(buf_size),
+    samp_size_(samp_size),
+    dist_(0, buf_size_ - samp_size - 1)
+  {}
+
+  void generate() {
+    std::uniform_int_distribution<uint64_t> d(
+        std::numeric_limits<uint64_t>::min(),
+        std::numeric_limits<uint64_t>::max());
+    buf_.reserve(buf_size_);
+    while (buf_.size() < buf_size_) {
+      uint64_t val = d(gen_);
+      buf_.append((const char *)&val, sizeof(val));
+    }
+    if (buf_.size() > buf_size_)
+      buf_.resize(buf_size_);
+  }
+
+  inline const char *sample() {
+    assert(!buf_.empty());
+    // return buf_.c_str() + dist_(gen_);
+    return buf_.c_str() + (buf_size_ - samp_size_ - 1);
+  }
+
+ private:
+  const size_t buf_size_;
+  const size_t samp_size_;
+  std::string buf_;
+  std::default_random_engine gen_;
+  std::uniform_int_distribution<size_t> dist_;
+};
+
 void send_write_reqs(conf_t* conf){
+
+  rand_data_gen dgen(1ULL << 25, 1024 * 1024 * 5);
+  dgen.generate();
   std::string object_name("hello_object");
+  unsigned long int size = 1024 * 1024 * 5;
 
   std::default_random_engine generator;
   generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
-  for(int y = 0; y < 3; ++y){
+  int loops = conf.round_count * conf.tag_count;
+  for(int z = 0; z < loops; ++z){
+    int y = z % conf.tag_count;
     double it_mean = conf->mean * (double)(y + 1);
     std::normal_distribution<double> distribution(it_mean, conf->std_dev);
     for(int i = 0; i < conf->op_count; ++i){
       int index = (int)distribution(generator);
       librados::bufferlist bl;
-      bl.append(conf->object_data);
+      const char * sample = dgen.sample();
+      bl.append(sample, size);
       bl.append("v2");
       librados::ObjectWriteOperation write_op;
       write_op.write_full(bl);
@@ -78,7 +125,7 @@ void send_write_reqs(conf_t* conf){
         std::cout << "not tagged index: " << index << "." << y << std::endl;
       }
       std::stringstream ss;
-      ss << object_name << "." << index << "." << y; 
+      ss << object_name << "." << index; 
       auto start_us = getus();
       //std::this_thread::sleep_for(std::chrono::milliseconds(2));   
       //int ret = 0; 
@@ -94,22 +141,23 @@ void send_write_reqs(conf_t* conf){
         write_ps.fetch_add(1);
       }
     }
+    is_done.fetch_add(1);
   }
 }
 
 void send_read_reqs(conf_t* conf){
-  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   std::string object_name("hello_object");
 
   std::default_random_engine generator;
   generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
   std::normal_distribution<double> distribution(conf->mean, conf->std_dev);
 
-  for(int i = 0; i < conf->op_count; ++i){
+
+  while(is_done.load() <= 0){
     int index = (int)distribution(generator);
     if(!conf->write_map[index]){
-      --i;
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;
     }
     librados::bufferlist bl;
@@ -149,10 +197,39 @@ void report(conf_t* conf){
 
 int main(int argc, const char **argv)
 {
+  std::string pool_name;
+  bool read;
+  bool write;
+  int n_threads;
+  int n_ops;
+  int n_rounds;
+
+  po::options_description opts("Benchmark options");
+  opts.add_options()
+  ("poolname,p", po::value<std::string>(&pool_name)->default_value("wbbench"), "Log name")
+  ("read,r", po::bool_switch(&read)->default_value(false), "perform reads")
+  ("write,w", po::bool_switch(&writes)->default_value(false), "perform writes")
+  ("threads,t", po::value<int>(&n_threads)->default_value(1), "number of threads")
+  ("ops,p", po::value<int>(&n_ops)->default_value(100), "number of ops")
+  ("rounds,p", po::value<int>(&n_rounds)->default_value(3), "number of rounds")
+  ("tags,g", po::value<int>(&n_rounds)->default_value(3), "number of tags")
+  ;
+
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, opts), vm);
+
+  if (vm.count("help")) {
+    std::cout << opts << std::endl;
+    return 1;
+  }
+
+  po::notify(vm);
+
+
+
   int ret = 0;
 
   // we will use all of these below
-  const char *pool_name = "wbbench";
   librados::IoCtx io_ctx;
 
   // first, we create a Rados object and initialize it
@@ -223,7 +300,7 @@ int main(int argc, const char **argv)
    * create an "IoCtx" which is used to do IO to a pool
    */
   {
-    ret = rados.ioctx_create(pool_name, io_ctx);
+    ret = rados.ioctx_create(pool_name.c_str(), io_ctx);
     if (ret < 0) {
       std::cerr << "couldn't set up ioctx! error " << ret << std::endl;
       ret = EXIT_FAILURE;
@@ -266,29 +343,52 @@ int main(int argc, const char **argv)
     false               //exit reporter
    };
 
-  std::thread writes(send_write_reqs, &conf);
-  //std::thread reads(send_read_reqs, &conf);
+  std::vector<std::thread> threads;
+
+  if(writes){
+    for(size_t i = 0; i < n_threads; i++)
+    {
+      std::thread write_thread(send_write_reqs, &conf);
+      threads.push_back(write_thread);
+    }
+  }
+
+  if(reads){
+    for(size_t i = 0; i < n_threads; i++)
+    {
+      std::thread read_thread(send_read_reqs, &conf);
+      threads.push_back(read_thread);
+    }
+  }
+
+  for(auto thread : threads){
+      thread.join();
+  }
+
   //std::thread reporter(report, &conf);
-
-  writes.join();
-  //reads.join();
-
   //conf.exit_reporter = true;
-
   //reporter.join();
 
   rados.shutdown();
 
-  // hdr_percentiles_print(
-  //   read_histogram,
-  //   stdout,  // File to write to
-  //   5,  // Granularity of printed values
-  //   1.0,  // Multiplier for results
-  //   CLASSIC);
+  std::stringstream fnr;
+  fnr << n_ops << "r-ops-" << n_rounds << "-rds-" << n_threads << "-thrds" << ".latency.csv";
+  FILE *ltfr = fopen(fn.str().c_str(), "w");
+  std::cout << "READS: " << std::endl;
+  hdr_percentiles_print(
+    read_histogram,
+    ltfr,  // File to write to
+    5,  // Granularity of printed values
+    1.0,  // Multiplier for results
+    CLASSIC);
   
+  std::stringstream fnw;
+  fnw << n_ops << "w-ops-" << n_rounds << "-rds-" << n_threads << "-thrds" << ".latency.csv";
+  FILE *ltfw = fopen(fn.str().c_str(), "w");
+  std::cout << "WRITE: " << std::endl;
   hdr_percentiles_print(
     write_histogram,
-    stdout,  // File to write to
+    ltfw,  // File to write to
     5,  // Granularity of printed values
     1.0,  // Multiplier for results
     CLASSIC);
