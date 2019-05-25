@@ -11,18 +11,20 @@
  */
 
 // install the librados-dev package to get this
-#include <rados/librados.hpp>
+#include <hdr_histogram.h>
 #include <boost/program_options.hpp>
+#include <rados/librados.hpp>
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <thread>
 #include <random>
 #include <cmath>
-#include <hdr_histogram.h>
 #include <chrono>
 #include <atomic>
 #include <vector>
+
+namespace po = boost::program_options;
 
 std::atomic<int> read_ps(0);
 std::atomic<int> write_ps(0);
@@ -100,9 +102,9 @@ void send_write_reqs(conf_t* conf){
 
   std::default_random_engine generator;
   generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
-  int loops = conf.round_count * conf.tag_count;
+  int loops = conf->round_count * conf->tag_count;
   for(int z = 0; z < loops; ++z){
-    int y = z % conf.tag_count;
+    int y = z % conf->tag_count;
     double it_mean = conf->mean * (double)(y + 1);
     std::normal_distribution<double> distribution(it_mean, conf->std_dev);
     for(int i = 0; i < conf->op_count; ++i){
@@ -198,21 +200,24 @@ void report(conf_t* conf){
 int main(int argc, const char **argv)
 {
   std::string pool_name;
+  std::string conf_path;
   bool read;
   bool write;
   int n_threads;
   int n_ops;
   int n_rounds;
+  int n_tags;
 
   po::options_description opts("Benchmark options");
   opts.add_options()
   ("poolname,p", po::value<std::string>(&pool_name)->default_value("wbbench"), "Log name")
   ("read,r", po::bool_switch(&read)->default_value(false), "perform reads")
-  ("write,w", po::bool_switch(&writes)->default_value(false), "perform writes")
+  ("write,w", po::bool_switch(&write)->default_value(false), "perform writes")
   ("threads,t", po::value<int>(&n_threads)->default_value(1), "number of threads")
   ("ops,p", po::value<int>(&n_ops)->default_value(100), "number of ops")
   ("rounds,p", po::value<int>(&n_rounds)->default_value(3), "number of rounds")
-  ("tags,g", po::value<int>(&n_rounds)->default_value(3), "number of tags")
+  ("tags,g", po::value<int>(&n_tags)->default_value(3), "number of tags")
+  ("conf,c", po::value<std::string>(&conf_path)->default_value("/etc/ceph/ceph.conf "), "path to conf file")
   ;
 
   po::variables_map vm;
@@ -337,7 +342,9 @@ int main(int argc, const char **argv)
     500.0,              //mean
     40.0,               //std_dev
     1.0,                //tag_dev
-    100,               //op_count
+    n_ops,                //op_count
+    n_rounds,                  //round_count
+    n_tags,                  //tag_count
     read_histogram,     //read histogram
     write_histogram,    //write histogram
     false               //exit reporter
@@ -345,24 +352,24 @@ int main(int argc, const char **argv)
 
   std::vector<std::thread> threads;
 
-  if(writes){
+  if(write){
     for(size_t i = 0; i < n_threads; i++)
     {
       std::thread write_thread(send_write_reqs, &conf);
-      threads.push_back(write_thread);
+      threads.push_back(std::move(write_thread));
     }
   }
 
-  if(reads){
+  if(read){
     for(size_t i = 0; i < n_threads; i++)
     {
       std::thread read_thread(send_read_reqs, &conf);
-      threads.push_back(read_thread);
+      threads.push_back(std::move(read_thread));
     }
   }
 
-  for(auto thread : threads){
-      thread.join();
+  for(auto& th : threads){
+      th.join();
   }
 
   //std::thread reporter(report, &conf);
@@ -373,7 +380,7 @@ int main(int argc, const char **argv)
 
   std::stringstream fnr;
   fnr << n_ops << "r-ops-" << n_rounds << "-rds-" << n_threads << "-thrds" << ".latency.csv";
-  FILE *ltfr = fopen(fn.str().c_str(), "w");
+  FILE *ltfr = fopen(fnr.str().c_str(), "w");
   std::cout << "READS: " << std::endl;
   hdr_percentiles_print(
     read_histogram,
@@ -384,7 +391,7 @@ int main(int argc, const char **argv)
   
   std::stringstream fnw;
   fnw << n_ops << "w-ops-" << n_rounds << "-rds-" << n_threads << "-thrds" << ".latency.csv";
-  FILE *ltfw = fopen(fn.str().c_str(), "w");
+  FILE *ltfw = fopen(fnw.str().c_str(), "w");
   std::cout << "WRITE: " << std::endl;
   hdr_percentiles_print(
     write_histogram,
